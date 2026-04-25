@@ -1520,11 +1520,10 @@
             setupEditorUI('existing');
             switchView('viewEditor');
             
-            renderAttachmentPanel(doc);
-
             if(pdfCache.has(doc.id)) {
                 // โหลดจากแรม — ไม่ต้อง call GAS
                 await renderFileToEditor(pdfCache.get(doc.id), null, false);
+                renderAttachmentPanel(doc);
                 return;
             }
 
@@ -1535,6 +1534,7 @@
                 if(base64) {
                     pdfCache.set(doc.id, base64); // เก็บลงแรม
                     await renderFileToEditor(base64, null, false);
+                    renderAttachmentPanel(doc);
                 } else {
                     renderFallbackEditor(doc);
                     showLoading(false);
