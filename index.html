@@ -622,7 +622,7 @@
         </header>
 
         <div class="flex flex-1 overflow-hidden relative">
-            <aside class="w-12 sm:w-16 bg-white border-r border-slate-200 flex flex-col items-center py-2 sm:py-4 gap-2 sm:gap-3 shrink-0 z-10 shadow-sm overflow-y-auto">
+            <aside id="editorAside" class="w-12 sm:w-16 bg-white border-r border-slate-200 flex flex-col items-center py-2 sm:py-4 gap-2 sm:gap-3 shrink-0 z-10 shadow-sm overflow-y-auto">
                 <button id="tool-select" class="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl text-slate-600 hover:bg-slate-100 active-tool transition" onclick="setTool('select')" title="เลือก">
                     <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
                 </button>
@@ -881,6 +881,7 @@
         let currentUser = null;
         let currentDocument = null;
         const pdfCache = new Map(); // cache base64 pdf ในแรม
+        let directorOriginalPageCount = 0; // จำนวนหน้า PDF ต้นฉบับของ ผอ.
         let newGeneratedDocNo = '';
         let activeCanvases = [];
         let canvasEdited = false; // ติดตามว่ามีการแก้ไขบน canvas หรือไม่
@@ -1516,7 +1517,14 @@
         async function openDocument(doc) {
             if(!doc.fileUrl) return showToast("ไม่พบไฟล์เอกสารแนบ", "error");
             currentDocument = doc;
-            canvasEdited = false; // เปิดเอกสารเดิม → ยังไม่มีการแก้ไข
+            canvasEdited = false;
+
+            // ผอ. → แสดง landing page ก่อน (เร็วทันที ไม่ต้อง render PDF)
+            if (currentUser.role === 'director' && doc.status.includes('รอ ผอ.')) {
+                showDirectorLanding(doc);
+                return;
+            }
+
             setupEditorUI('existing');
             switchView('viewEditor');
             
@@ -1543,6 +1551,101 @@
                 renderFallbackEditor(doc);
                 showLoading(false);
             });
+        }
+
+        // ── Director landing & sign flow ──────────────────────────────
+        function showDirectorLanding(doc) {
+            setupEditorUI('existing');
+            switchView('viewEditor');
+            document.getElementById('editorAside').style.display = 'none';
+            document.getElementById('actionBtnDirector').style.display = 'none';
+
+            const container = document.getElementById('scalableContent');
+            container.innerHTML = '';
+            activeCanvases = [];
+
+            const attUrls = parseAttachmentUrls(doc.attachmentUrl || '');
+            const attHtml = attUrls.length > 0 ? attUrls.map(function(url, i) {
+                return `<a href="${url}" target="_blank" class="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-semibold hover:bg-emerald-100 transition">📎 ไฟล์แนบ${attUrls.length > 1 ? ' '+(i+1) : ''}</a>`;
+            }).join('') : '';
+
+            const panel = document.createElement('div');
+            panel.className = 'bg-white rounded-2xl shadow-lg border border-slate-200 p-6 sm:p-10 max-w-xl w-full mx-auto mt-8';
+            panel.style.cssText = 'background:var(--bg-card);border-color:var(--border);color:var(--text-base)';
+            panel.innerHTML = `
+                <div class="text-2xl font-bold mb-1" style="color:var(--text-head)">${doc.title}</div>
+                <div class="text-sm mb-6" style="color:var(--text-muted)">เลขรับ: ${doc.docNo} &bull; จาก: ${doc.sender}</div>
+                <div class="flex flex-col gap-3 mb-8">
+                    <a href="${doc.fileUrl}" target="_blank" class="flex items-center gap-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 font-semibold hover:bg-blue-100 transition">📄 เปิดอ่านเอกสาร (PDF)</a>
+                    ${attHtml}
+                </div>
+                <button onclick="directorStartSign()" class="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-lg transition shadow-sm">✍️ ลงนาม &amp; อนุมัติ</button>
+            `;
+            container.appendChild(panel);
+        }
+
+        async function directorStartSign() {
+            showLoading(true);
+            document.getElementById('loadingText').innerText = 'กำลังโหลดเอกสารสำหรับลงนาม...';
+            try {
+                let base64 = pdfCache.get(currentDocument.id);
+                if (!base64) {
+                    base64 = await gasCall('getDocumentBase64', { docId: currentDocument.id });
+                    if (base64) pdfCache.set(currentDocument.id, base64);
+                }
+                if (!base64) { showToast('ไม่สามารถโหลดเอกสารได้', 'error'); showLoading(false); return; }
+
+                // decode เพื่อนับหน้าและ render หน้า 1
+                const ab = await fetch(`data:application/pdf;base64,${base64}`).then(function(r) { return r.arrayBuffer(); });
+                const pdfDoc = await pdfjsLib.getDocument(ab).promise;
+                directorOriginalPageCount = pdfDoc.numPages;
+
+                const container = document.getElementById('scalableContent');
+                container.innerHTML = '';
+                activeCanvases = [];
+
+                const page = await pdfDoc.getPage(1);
+                const unscaledVp = page.getViewport({scale: 1.0});
+                const displayScale = 800 / unscaledVp.width;
+                const displayVp = page.getViewport({scale: displayScale});
+                const hiResVp = page.getViewport({scale: displayScale * 2.0});
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'bg-white shadow-lg relative border border-slate-200 mx-auto rounded-lg overflow-hidden';
+                const canvasEl = document.createElement('canvas');
+                canvasEl.id = 'canvas_page_1';
+                wrapper.appendChild(canvasEl);
+                container.appendChild(wrapper);
+
+                const fCanvas = new fabric.Canvas('canvas_page_1');
+                activeCanvases.push({ canvas: fCanvas, hiResScale: 2.0 });
+                fCanvas.setWidth(displayVp.width);
+                fCanvas.setHeight(displayVp.height);
+
+                const tempC = document.createElement('canvas');
+                tempC.width = hiResVp.width; tempC.height = hiResVp.height;
+                await page.render({canvasContext: tempC.getContext('2d'), viewport: hiResVp}).promise;
+
+                await new Promise(function(r) {
+                    fabric.Image.fromURL(tempC.toDataURL('image/jpeg', 0.88), function(img) {
+                        fCanvas.setBackgroundImage(img, fCanvas.renderAll.bind(fCanvas), {
+                            scaleX: fCanvas.width / img.width, scaleY: fCanvas.height / img.height
+                        });
+                        r();
+                    });
+                });
+
+                fCanvas.on('path:created', function() { canvasEdited = true; });
+                fCanvas.on('object:added', function() { canvasEdited = true; });
+
+                document.getElementById('editorAside').style.display = '';
+                document.getElementById('actionBtnDirector').style.display = 'flex';
+                showLoading(false);
+
+            } catch(e) {
+                showToast('เกิดข้อผิดพลาด: ' + (e.message || e), 'error');
+                showLoading(false);
+            }
         }
 
         // ── Checkbox teacher helpers ──────────────────────────────────
@@ -1679,6 +1782,7 @@
         let docNoMode = 'show'; // 'show' | 'none' | 'hidden'
 
         function setupEditorUI(state) {
+            document.getElementById('editorAside').style.display = ''; // reset
             document.getElementById('actionBtnClerk').style.display = 'none';
             document.getElementById('actionBtnDirector').style.display = 'none';
             document.getElementById('actionBtnDistribute').style.display = 'none';
@@ -2203,6 +2307,28 @@
                         pdf.addImage(imgData, 'PNG', 0, 0, exportW, exportH, undefined, 'FAST');
                     }
                     
+                    // ผอ.ลงนามแค่หน้า 1 → ต่อหน้า 2...N จาก PDF ต้นฉบับ
+                    if (currentSubmitAction === 'director' && directorOriginalPageCount > 1) {
+                        const origAb = await fetch(`data:application/pdf;base64,${pdfCache.get(currentDocument.id)}`).then(function(r) { return r.arrayBuffer(); });
+                        const origPdf = await pdfjsLib.getDocument(origAb).promise;
+                        for (let p = 2; p <= directorOriginalPageCount; p++) {
+                            document.getElementById('loadingText').innerText = `กำลังรวมหน้า ${p}/${directorOriginalPageCount}...`;
+                            await new Promise(function(r) { setTimeout(r, 20); });
+                            const pg = await origPdf.getPage(p);
+                            const vp0 = pg.getViewport({scale: 1.0});
+                            const dScale = 800 / vp0.width;
+                            const displayVp = pg.getViewport({scale: dScale});
+                            const hiResVp = pg.getViewport({scale: dScale * 2.0});
+                            const tmpC = document.createElement('canvas');
+                            tmpC.width = hiResVp.width; tmpC.height = hiResVp.height;
+                            await pg.render({canvasContext: tmpC.getContext('2d'), viewport: hiResVp}).promise;
+                            const eW = displayVp.width * 2.0, eH = displayVp.height * 2.0;
+                            const ori = displayVp.width > displayVp.height ? 'l' : 'p';
+                            pdf.addPage([eW, eH], ori);
+                            pdf.addImage(tmpC.toDataURL('image/jpeg', 0.88), 'JPEG', 0, 0, eW, eH, undefined, 'FAST');
+                        }
+                    }
+
                     document.getElementById('loadingText').innerText = "กำลังเตรียมส่ง...";
                     await new Promise(r => setTimeout(r, 30));
                     base64Pdf = pdf.output('datauristring').split(',')[1];
