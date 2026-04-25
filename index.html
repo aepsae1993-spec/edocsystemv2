@@ -464,36 +464,46 @@
 
     <!-- Modal: Send -->
     <div id="modalSend" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[3000] hidden items-center justify-center">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden mx-4 animate-fadeInUp">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden mx-4 animate-fadeInUp max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
                 <h3 class="text-xl font-bold text-slate-800" id="modalSendTitle">ดำเนินการ</h3>
                 <button onclick="closeModal('modalSend')" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">&times;</button>
             </div>
-            <div class="p-6 flex flex-col gap-4">
+            <div class="p-6 flex flex-col gap-4 overflow-y-auto flex-1">
                 <div id="docTitleGroup" class="flex flex-col gap-1.5">
                     <label class="font-semibold text-slate-700 text-base">เรื่อง / ชื่อเอกสาร <span class="text-red-500">*</span></label>
                     <input type="text" id="modalDocTitle" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="ระบุชื่อเรื่องของเอกสารฉบับนี้...">
                 </div>
+                <div id="docTypeGroup" class="hidden flex-col gap-1.5">
+                    <label class="font-semibold text-slate-700 text-base">📂 ประเภทเอกสาร <span class="text-red-500">*</span></label>
+                    <select id="docTypeSelect" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-base focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                        <option value="ประชาสัมพันธ์">📢 ประชาสัมพันธ์</option>
+                        <option value="แจ้งให้ทราบ">📋 แจ้งให้ทราบ</option>
+                        <option value="พิจารณา">🔍 พิจารณา</option>
+                        <option value="ดำเนินการ">⚙️ ดำเนินการ</option>
+                    </select>
+                </div>
                 <div id="teacherSelectGroup" class="hidden flex-col gap-1.5">
-                    <label class="font-semibold text-slate-700 text-base">เลือกครูผู้รับ <span class="text-sm text-slate-400 font-normal">(กด Ctrl เพื่อเลือกหลายคน)</span></label>
+                    <label class="font-semibold text-slate-700 text-base">👥 แจ้งเตือนถึง <span class="text-sm text-slate-400 font-normal">(กด Ctrl เพื่อเลือกหลายคน)</span></label>
                     <select id="teacherSelect" multiple class="bg-slate-50 border border-slate-200 rounded-xl p-2 h-32 text-base focus:ring-2 focus:ring-indigo-500 outline-none">
-                        <option value="all">📢 แจ้งเตือนทุกคน</option>
+                        <option value="all">📢 ทุกบุคลากร</option>
                     </select>
                 </div>
                 <div class="flex flex-col gap-1.5">
                     <label class="font-semibold text-slate-700 text-base">หมายเหตุ / ข้อความสั่งการ</label>
-                    <textarea id="sendNote" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-base focus:ring-2 focus:ring-indigo-500 outline-none h-24 resize-none transition" placeholder="พิมพ์ข้อความเพิ่มเติม..."></textarea>
+                    <textarea id="sendNote" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-base focus:ring-2 focus:ring-indigo-500 outline-none h-20 resize-none transition" placeholder="พิมพ์ข้อความเพิ่มเติม..."></textarea>
                 </div>
                 <div id="urgentGroup" class="hidden flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
                     <input type="checkbox" id="urgentCheckbox" class="w-5 h-5 accent-red-600 rounded">
-                    <label for="urgentCheckbox" class="font-bold text-red-700 text-base cursor-pointer">🔴 เอกสารด่วนมาก <span class="font-normal text-red-500 text-sm">(แจ้งเตือนซ้ำทุก 2 ชม. จนกว่าจะดำเนินการ)</span></label>
+                    <label for="urgentCheckbox" class="font-bold text-red-700 text-base cursor-pointer">🔴 เอกสารด่วนมาก <span class="font-normal text-red-500 text-sm">(แจ้งเตือนซ้ำทุก 2 ชม.)</span></label>
                 </div>
                 <div id="attachmentGroup" class="hidden flex-col gap-1.5 p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl">
-                    <label class="font-semibold text-slate-700 text-base">📎 ไฟล์แนบเพิ่มเติม</label>
-                    <input type="file" id="attachmentUpload" class="block w-full text-base text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
+                    <label class="font-semibold text-slate-700 text-base">📎 ไฟล์แนบเพิ่มเติม <span class="text-sm font-normal text-slate-400">(เลือกได้หลายไฟล์)</span></label>
+                    <input type="file" id="attachmentUpload" multiple class="block w-full text-base text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
+                    <div id="attachmentFileList" class="text-xs text-slate-500 mt-1"></div>
                 </div>
             </div>
-            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
                 <button onclick="closeModal('modalSend')" class="px-5 py-2.5 font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition">ยกเลิก</button>
                 <button onclick="processSubmit()" class="px-5 py-2.5 font-bold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 rounded-xl shadow-sm transition">ยืนยันบันทึก & ส่ง</button>
             </div>
@@ -1120,6 +1130,9 @@
                 if(doc.status.includes('รอ ผอ.')) { sColor = 'text-amber-700 bg-amber-50 border border-amber-200'; statusIcon = '⏳'; }
                 if(doc.status.includes('อนุมัติ')) { sColor = 'text-purple-700 bg-purple-50 border border-purple-200'; statusIcon = '✅'; }
                 if(doc.status.includes('แจกจ่าย')) { sColor = 'text-indigo-700 bg-indigo-50 border border-indigo-200'; statusIcon = '📤'; }
+                const rowAttUrls = parseAttachmentUrls(doc.attachmentUrl || '');
+                const attBadge = rowAttUrls.length > 0 ? `<span class="ml-1 text-emerald-600 font-bold text-xs">📎${rowAttUrls.length > 1 ? rowAttUrls.length : ''}</span>` : '';
+                const docTypeBadge = doc.docType ? `<span class="ml-1 text-xs text-slate-400 font-normal">[${doc.docType}]</span>` : '';
 
                 let tracking = {};
                 try { tracking = JSON.parse(doc.trackingData || '{}'); } catch(e){}
@@ -1138,6 +1151,13 @@
                     const docJson = encodeURIComponent(JSON.stringify(doc));
                     actionHtml += `<button onclick="openAdminEditModal('${docJson}')" class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 text-xs sm:text-sm font-semibold text-indigo-600 transition flex items-center gap-1 whitespace-nowrap">✏️ <span class="hidden sm:inline">แก้ไข</span></button>`;
                     actionHtml += `<button onclick="adminQuickDelete('${doc.id}')" class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 text-xs sm:text-sm font-semibold text-red-600 transition flex items-center gap-1 whitespace-nowrap">🗑️ <span class="hidden sm:inline">ลบ</span></button>`;
+                } else if (currentUser.role === 'clerk' && currentTab === 'clerk-pending') {
+                    actionHtml += `<button onclick="quickEditDocNo('${doc.id}','${doc.docNo.replace(/'/g,"&#39;")}')" class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 text-xs sm:text-sm font-semibold text-amber-700 transition flex items-center gap-1 whitespace-nowrap">✏️ <span class="hidden sm:inline">เลขรับ</span></button>`;
+                    actionHtml += `<button onclick="quickDeleteDocFromTable('${doc.id}')" class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 text-xs sm:text-sm font-semibold text-red-600 transition flex items-center gap-1 whitespace-nowrap">🗑️</button>`;
+                    actionHtml += `<button onclick='openDocument(${JSON.stringify(doc).replace(/'/g,"&#39;")})' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 text-xs sm:text-sm font-semibold text-slate-700 hover:text-indigo-700 transition flex items-center gap-1 whitespace-nowrap">📄 <span class="hidden sm:inline">เปิด</span></button>`;
+                } else if (currentUser.role === 'clerk' && currentTab === 'clerk-distribute') {
+                    actionHtml += `<button onclick='directDistribute(${JSON.stringify(doc).replace(/'/g,"&#39;")})' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs sm:text-sm font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap">📢 <span class="hidden sm:inline">แจกจ่าย</span></button>`;
+                    actionHtml += `<button onclick='openDocument(${JSON.stringify(doc).replace(/'/g,"&#39;")})' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white border border-slate-200 rounded-lg hover:bg-indigo-50 text-xs sm:text-sm font-semibold text-slate-700 transition flex items-center gap-1 whitespace-nowrap">📄 <span class="hidden sm:inline">เปิด</span></button>`;
                 } else {
                     if (doc.status.includes('แจกจ่าย') && currentUser.role !== 'teacher') {
                         const docParam = encodeURIComponent(JSON.stringify(doc));
@@ -1145,23 +1165,19 @@
                     }
 
                     if (currentUser.role === 'teacher') {
-                        // ปุ่มรับทราบ (ถ้ายังไม่ได้รับทราบ/เสร็จสิ้น)
                         if (!tracking[currentUser.id] || tracking[currentUser.id] === 'read') {
                             actionHtml += `<button onclick='quickAcknowledge("${doc.id}")' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 text-xs sm:text-sm font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap">📋 <span class="hidden sm:inline">รับทราบ</span></button>`;
                         }
-                        // ปุ่มเสร็จสิ้น (ถ้ารับทราบแล้ว)
                         if (tracking[currentUser.id] === 'acknowledged') {
                             actionHtml += `<button onclick='quickComplete("${doc.id}")' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 text-xs sm:text-sm font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap">✅ <span class="hidden sm:inline">เสร็จสิ้น</span></button>`;
                         }
-                        // ปุ่มเปิดเอกสาร → เปิด Drive + track read
                         if (doc.fileUrl) {
                             actionHtml += `<button onclick='openAndTrackRead("${doc.id}", "${doc.fileUrl}")' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 text-xs sm:text-sm font-semibold text-blue-700 transition flex items-center gap-1 whitespace-nowrap">📂 <span class="hidden sm:inline">เปิดเอกสาร</span></button>`;
                         }
+                        rowAttUrls.forEach(function(url, i) {
+                            actionHtml += `<a href="${url}" target="_blank" class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 text-xs sm:text-sm font-semibold text-emerald-700 transition flex items-center gap-1 whitespace-nowrap">📎 <span class="hidden sm:inline">${rowAttUrls.length > 1 ? 'แนบ'+(i+1) : 'แนบ'}</span></a>`;
+                        });
                     } else {
-                        if (currentUser.role === 'teacher' && tracking[currentUser.id] !== 'completed') {
-                            actionHtml += `<button onclick='quickComplete("${doc.id}")' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 text-xs sm:text-sm font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap">✅ <span class="hidden sm:inline">เสร็จสิ้น</span></button>`;
-                        }
-
                         actionHtml += `<button onclick='openDocument(${JSON.stringify(doc).replace(/'/g, "&#39;")})' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 text-xs sm:text-sm font-semibold text-slate-700 hover:text-indigo-700 transition flex items-center gap-1 whitespace-nowrap">📄 <span class="hidden sm:inline">เปิด</span></button>`;
                     }
                 }
@@ -1173,7 +1189,7 @@
                 tr.innerHTML = `
                     <td class="p-3 sm:p-4"><span class="font-bold text-indigo-600 bg-indigo-50 px-2 sm:px-2.5 py-1 rounded-md text-xs sm:text-sm">${doc.docNo}</span></td>
                     <td class="p-3 sm:p-4">
-                        <div class="font-medium text-slate-800 text-sm sm:text-base">${urgentTag}${doc.title}${overdueTag}</div>
+                        <div class="font-medium text-slate-800 text-sm sm:text-base">${urgentTag}${doc.title}${docTypeBadge}${attBadge}${overdueTag}</div>
                         ${doc.note && (currentUser.role === 'clerk' || currentUser.role === 'director' || currentUser.role === 'admin') ? `<div class="text-xs sm:text-sm text-amber-600 mt-0.5">📝 ${doc.note}</div>` : ''}
                     </td>
                     <td class="p-3 sm:p-4 text-slate-500 text-sm hidden sm:table-cell">${doc.sender}</td>
@@ -1294,20 +1310,64 @@
             });
         }
 
-        function renderAttachmentPanel(doc) {
-            if(doc.attachmentUrl) {
-                const container = document.getElementById('scalableContent');
-                const panel = document.createElement('div');
-                panel.className = "w-full max-w-2xl bg-emerald-50 border border-emerald-200 rounded-xl p-4 mt-2 text-center";
-                panel.innerHTML = `<span class="font-bold text-emerald-800">📎 เอกสารแนบเพิ่มเติม:</span> <a href="${doc.attachmentUrl}" target="_blank" class="text-indigo-600 underline ml-2 font-medium">ดาวน์โหลดไฟล์แนบ</a>`;
-                container.insertBefore(panel, container.firstChild);
+        function parseAttachmentUrls(urlStr) {
+            if (!urlStr || urlStr === '[]') return [];
+            if (urlStr.startsWith('[')) {
+                try { return JSON.parse(urlStr).filter(Boolean); } catch(e) {}
             }
+            return urlStr.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+        }
+
+        function quickEditDocNo(docId, currentDocNo) {
+            const newVal = prompt('แก้ไขเลขรับ:', currentDocNo);
+            if (!newVal || newVal.trim() === '' || newVal.trim() === currentDocNo) return;
+            showLoading(true);
+            gasCall('updateDocumentField', { docId: docId, fieldName: 'docNo', newValue: newVal.trim() }).then(function(res) {
+                showLoading(false);
+                if (res.success) { showToast('✅ แก้ไขเลขรับเรียบร้อย'); loadDashboardData(); }
+                else showToast('❌ ' + res.message, 'error');
+            }).catch(function(err) { showLoading(false); showToast('❌ ' + err, 'error'); });
+        }
+
+        function quickDeleteDocFromTable(docId) {
+            if (!confirm('⚠️ ลบเอกสารนี้? ไม่สามารถย้อนกลับได้')) return;
+            showLoading(true);
+            gasCall('deleteDocument', { docId: docId }).then(function(res) {
+                showLoading(false);
+                if (res.success) { showToast('✅ ' + res.message); loadDashboardData(); }
+                else showToast('❌ ' + res.message, 'error');
+            }).catch(function(err) { showLoading(false); showToast('❌ ' + err, 'error'); });
+        }
+
+        function directDistribute(doc) {
+            currentDocument = doc;
+            canvasEdited = false;
+            ensureTeacherListLoaded(function() {
+                openSendModal('distribute');
+            });
+        }
+
+        function renderAttachmentPanel(doc) {
+            const urls = parseAttachmentUrls(doc.attachmentUrl || '');
+            if (urls.length === 0) return;
+            const container = document.getElementById('scalableContent');
+            const panel = document.createElement('div');
+            panel.className = "w-full max-w-2xl bg-emerald-50 border border-emerald-200 rounded-xl p-4 mt-2";
+            const links = urls.map(function(url, i) {
+                return `<a href="${url}" target="_blank" class="inline-flex items-center gap-1 text-indigo-600 underline font-medium hover:text-indigo-800">📎 ${urls.length > 1 ? 'ไฟล์แนบ '+(i+1) : 'ดาวน์โหลดไฟล์แนบ'}</a>`;
+            }).join('<span class="mx-2 text-slate-300">|</span>');
+            panel.innerHTML = `<span class="font-bold text-emerald-800">📎 เอกสารแนบเพิ่มเติม:</span> <span class="ml-2">${links}</span>`;
+            container.insertBefore(panel, container.firstChild);
         }
 
         function renderFallbackEditor(doc) {
             const container = document.getElementById('scalableContent');
             let attHtml = '';
-            if(doc.attachmentUrl) attHtml = `<div class="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-left"><span class="font-bold text-emerald-800">📎 ไฟล์แนบ:</span> <a href="${doc.attachmentUrl}" target="_blank" class="text-indigo-600 underline ml-2 font-medium">โหลดไฟล์แนบ</a></div>`;
+            const attUrls = parseAttachmentUrls(doc.attachmentUrl || '');
+            if (attUrls.length > 0) {
+                const attLinks = attUrls.map(function(url, i) { return `<a href="${url}" target="_blank" class="text-indigo-600 underline font-medium ml-1">📎 ${attUrls.length > 1 ? 'ไฟล์แนบ '+(i+1) : 'โหลดไฟล์แนบ'}</a>`; }).join('');
+                attHtml = `<div class="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-left"><span class="font-bold text-emerald-800">📎 ไฟล์แนบ:</span>${attLinks}</div>`;
+            }
             container.innerHTML = `<div class="bg-white p-10 text-center shadow-lg rounded-2xl max-w-2xl mx-auto mt-10 w-full border border-slate-200"><h3 class="text-2xl font-bold text-slate-800 mb-2">${doc.title}</h3><p class="text-slate-500 mb-6">เลขรับ: ${doc.docNo}</p><div class="flex flex-col sm:flex-row gap-3 justify-center"><a href="${doc.fileUrl}" target="_blank" class="inline-block bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-6 py-3 rounded-xl font-bold hover:from-indigo-700 hover:to-indigo-800 transition shadow-sm">📥 ดูเอกสารต้นฉบับ (PDF)</a><a href="${doc.fileUrl}" target="_blank" class="inline-block bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:from-blue-600 hover:to-blue-700 transition shadow-sm">📂 เปิดใน Google Drive</a></div>${attHtml}<div class="mt-8 text-slate-400 text-sm border-t border-slate-100 pt-4">*แสดงในรูปแบบลิงก์เนื่องจากไม่สามารถดึงไฟล์จากเซิร์ฟเวอร์ได้</div></div>`;
             activeCanvases = [];
         }
@@ -1694,31 +1754,47 @@
             const teacherGroup = document.getElementById('teacherSelectGroup');
             const attachGroup = document.getElementById('attachmentGroup');
             const urgentGroup = document.getElementById('urgentGroup');
+            const docTypeGroup = document.getElementById('docTypeGroup');
             const titleInput = document.getElementById('modalDocTitle');
-            
+
             teacherGroup.style.display = 'none';
             attachGroup.style.display = 'none';
             urgentGroup.style.display = 'none';
+            docTypeGroup.style.display = 'none';
             document.getElementById('urgentCheckbox').checked = false;
+            document.getElementById('attachmentUpload').value = '';
+            document.getElementById('attachmentFileList').textContent = '';
             titleInput.value = currentDocument ? currentDocument.title : '';
-            
-            // แสดงหมายเหตุเดิม (ถ้ามี) ให้ทุก role เห็น
-            const noteEl = document.getElementById('sendNote');
-            noteEl.value = '';
-            if (currentDocument && currentDocument.note) {
-                noteEl.value = currentDocument.note;
-            }
 
-            if(action === 'clerk') {
+            const noteEl = document.getElementById('sendNote');
+            noteEl.value = (currentDocument && currentDocument.note) ? currentDocument.note : '';
+
+            if (action === 'clerk') {
                 titleEl.innerText = "ส่งให้ผู้อำนวยการพิจารณา";
                 attachGroup.style.display = 'flex';
             } else if (action === 'director') {
-                titleEl.innerText = "อนุมัติและส่งกลับธุรการ";
+                titleEl.innerText = "ลงนาม อนุมัติ & กำหนดผู้รับ";
+                docTypeGroup.style.display = 'flex';
+                teacherGroup.style.display = 'flex';
+                if (currentDocument && currentDocument.docType) {
+                    const sel = document.getElementById('docTypeSelect');
+                    for (let opt of sel.options) { opt.selected = (opt.value === currentDocument.docType); }
+                }
+                if (currentDocument && currentDocument.target) {
+                    const targets = currentDocument.target.split(',').map(function(s) { return s.trim(); });
+                    const sel = document.getElementById('teacherSelect');
+                    for (let opt of sel.options) { opt.selected = targets.includes(opt.value); }
+                }
             } else if (action === 'distribute') {
                 titleEl.innerText = "แจกจ่ายเอกสารให้บุคลากร";
                 teacherGroup.style.display = 'flex';
                 attachGroup.style.display = 'flex';
                 urgentGroup.style.display = 'flex';
+                if (currentDocument && currentDocument.target) {
+                    const targets = currentDocument.target.split(',').map(function(s) { return s.trim(); });
+                    const sel = document.getElementById('teacherSelect');
+                    for (let opt of sel.options) { opt.selected = targets.includes(opt.value); }
+                }
             }
         }
 
@@ -1778,24 +1854,28 @@
                     document.getElementById('loadingText').innerText = "กำลังประมวลผล...";
                 }
 
-                let attBase64 = null, attName = null, attMime = null;
+                // Multiple attachments
+                const attachments = [];
                 const attachFileEl = document.getElementById('attachmentUpload');
-                if(attachFileEl && attachFileEl.files.length > 0) {
-                    const file = attachFileEl.files[0];
-                    attName = file.name; attMime = file.type;
-                    attBase64 = await new Promise((resolve) => {
-                        const r = new FileReader();
-                        r.onload = e => resolve(e.target.result.split(',')[1]);
-                        r.readAsDataURL(file);
-                    });
+                if (attachFileEl && attachFileEl.files.length > 0) {
+                    for (const file of attachFileEl.files) {
+                        const b64 = await new Promise((resolve) => {
+                            const r = new FileReader();
+                            r.onload = ev => resolve(ev.target.result.split(',')[1]);
+                            r.readAsDataURL(file);
+                        });
+                        attachments.push({ data: b64, name: file.name, mime: file.type });
+                    }
                 }
 
                 let targets = [];
-                if(currentSubmitAction === 'distribute') {
+                if (currentSubmitAction === 'distribute' || currentSubmitAction === 'director') {
                     const selectEl = document.getElementById('teacherSelect');
-                    for(let opt of selectEl.selectedOptions) targets.push(opt.value);
+                    for (let opt of selectEl.selectedOptions) targets.push(opt.value);
                 }
 
+                const docTypeEl = document.getElementById('docTypeSelect');
+                const docType = docTypeEl ? docTypeEl.value : '';
                 const docTitle = titleInput.value.trim();
                 const docNo = currentDocument ? currentDocument.docNo : newGeneratedDocNo;
 
@@ -1809,10 +1889,11 @@
                     fileData: base64Pdf, fileName: `EDOC_${docNo.replace('/','_')}.pdf`,
                     existingFileUrl: currentDocument ? currentDocument.fileUrl : null,
                     targetTeachers: targets,
-                    attachmentData: attBase64, attachmentName: attName, attachmentMimeType: attMime,
+                    attachments: attachments,
                     existingAttachmentUrl: currentDocument ? currentDocument.attachmentUrl : null,
                     trackingData: currentDocument ? currentDocument.trackingData : null,
-                    urgent: (currentSubmitAction === 'distribute' && document.getElementById('urgentCheckbox').checked) ? 'ด่วนมาก' : ''
+                    urgent: (currentSubmitAction === 'distribute' && document.getElementById('urgentCheckbox').checked) ? 'ด่วนมาก' : '',
+                    docType: (currentSubmitAction === 'director' || currentSubmitAction === 'distribute') ? docType : ''
                 };
 
                 gasCall('processDocument', { payload: payload }).then(function(response) {
@@ -2226,6 +2307,13 @@
             });
         }
 
+        document.getElementById('attachmentUpload').addEventListener('change', function() {
+            const list = document.getElementById('attachmentFileList');
+            if (!list) return;
+            const files = Array.from(this.files);
+            list.textContent = files.length > 0 ? files.map(function(f) { return '📎 ' + f.name; }).join('  ') : '';
+        });
+
         function refreshTeacherData() {
             // Reload teacher list for login dropdown & other selects
             gasCall('getTeacherList').then(function(teachers) {
@@ -2233,7 +2321,7 @@
                 const loginSelect = document.getElementById('loginTeacherSelect');
                 const distSelect = document.getElementById('teacherSelect');
                 loginSelect.innerHTML = '<option value="">-- เลือกชื่อของคุณ --</option>';
-                distSelect.innerHTML = '<option value="all">📢 แจ้งเตือนทุกคน</option>';
+                distSelect.innerHTML = '<option value="all">📢 ทุกบุคลากร</option>';
                 globalTeacherList.forEach(t => {
                     loginSelect.innerHTML += `<option value="${t.id}">${t.name} (${t.department})</option>`;
                     distSelect.innerHTML += `<option value="${t.id}">${t.name} (${t.department})</option>`;
