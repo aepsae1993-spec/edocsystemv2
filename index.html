@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -40,23 +40,219 @@
         }
     </script>
     <style>
-        :root {
-            --brand-grad: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+        /* ══════════════════════════════════════════════
+           THEME SYSTEM
+        ══════════════════════════════════════════════ */
+
+        /* ── DARK (luxury, default) ── */
+        :root, [data-theme="dark"] {
+            --brand-grad: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 40%, #ec4899 100%);
+            --bg-page:    #0f0e1a;
+            --bg-card:    #1a1828;
+            --bg-card2:   #221f35;
+            --bg-input:   #2a2640;
+            --bg-hover:   #2e2a47;
+            --border:     rgba(139,92,246,0.2);
+            --border2:    rgba(139,92,246,0.12);
+            --text-base:  #e2e0f0;
+            --text-muted: #8b82b0;
+            --text-head:  #f0eeff;
+            --accent:     #a78bfa;
+            --accent2:    #7c3aed;
+            --gold:       #f59e0b;
+            --glass-bg:   rgba(26,24,40,0.85);
+            --glass-border: rgba(167,139,250,0.18);
+            --shadow:     0 8px 32px rgba(0,0,0,0.45);
+            --glow:       0 0 40px rgba(139,92,246,0.15);
+            --scrollbar-track: #1a1828;
+            --scrollbar-thumb: #4c1d95;
+            --stat-bg:    linear-gradient(135deg,rgba(42,38,64,0.98),rgba(34,31,53,0.9));
+            --table-hover:#24213a;
+            --badge-bg:   rgba(139,92,246,0.15);
+            --badge-text: #c4b5fd;
+            --btn-secondary-bg: rgba(139,92,246,0.12);
+            --btn-secondary-text: #c4b5fd;
+            --btn-secondary-border: rgba(139,92,246,0.3);
+            --tab-active: #a78bfa;
+            --tab-border: #a78bfa;
+            --tab-text:   #8b82b0;
         }
-        html { font-size: 17px; }
+
+        /* ── LIGHT (minimal-cute) ── */
+        [data-theme="light"] {
+            --brand-grad: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+            --bg-page:    #f8f7ff;
+            --bg-card:    #ffffff;
+            --bg-card2:   #faf9ff;
+            --bg-input:   #f5f4ff;
+            --bg-hover:   #f0eeff;
+            --border:     #e5e2f8;
+            --border2:    #ede9fe;
+            --text-base:  #374151;
+            --text-muted: #9ca3af;
+            --text-head:  #1e1b4b;
+            --accent:     #6366f1;
+            --accent2:    #4f46e5;
+            --gold:       #f59e0b;
+            --glass-bg:   rgba(255,255,255,0.85);
+            --glass-border: rgba(99,102,241,0.12);
+            --shadow:     0 4px 20px rgba(99,102,241,0.08);
+            --glow:       none;
+            --scrollbar-track: #f1f0ff;
+            --scrollbar-thumb: #c4b5fd;
+            --stat-bg:    linear-gradient(135deg,rgba(255,255,255,0.98),rgba(250,249,255,0.9));
+            --table-hover:#f5f3ff;
+            --badge-bg:   #ede9fe;
+            --badge-text: #4f46e5;
+            --btn-secondary-bg: #f5f3ff;
+            --btn-secondary-text: #4f46e5;
+            --btn-secondary-border: #ddd6fe;
+            --tab-active: #4f46e5;
+            --tab-border: #4f46e5;
+            --tab-text:   #6b7280;
+        }
+
+        /* ── Global apply ── */
+        html { font-size: 17px; transition: background 0.3s, color 0.3s; }
         @media (max-width: 639px) { html { font-size: 16px; } }
-        body { overscroll-behavior: none; font-size: 1rem; letter-spacing: 0.01em; }
+        body {
+            overscroll-behavior: none; font-size: 1rem; letter-spacing: 0.01em;
+            background: var(--bg-page) !important;
+            color: var(--text-base) !important;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* Dark body background override */
+        [data-theme="dark"] body,
+        [data-theme="dark"] #viewDashboard,
+        [data-theme="dark"] #viewEditor {
+            background: var(--bg-page) !important;
+        }
+        [data-theme="dark"] #viewDashboard { background: var(--bg-page) !important; }
+
+        /* Tailwind bg-slate-50 override */
+        [data-theme="dark"] .bg-slate-50,
+        [data-theme="dark"] .bg-white {
+            background-color: var(--bg-card) !important;
+        }
+        [data-theme="dark"] .bg-slate-100 { background-color: var(--bg-card2) !important; }
+        [data-theme="dark"] .bg-slate-200 { background-color: var(--bg-hover) !important; }
+
+        /* Text overrides */
+        [data-theme="dark"] .text-slate-800,
+        [data-theme="dark"] .text-slate-700,
+        [data-theme="dark"] .text-slate-900 { color: var(--text-head) !important; }
+        [data-theme="dark"] .text-slate-600,
+        [data-theme="dark"] .text-slate-500 { color: var(--text-muted) !important; }
+        [data-theme="dark"] .text-slate-400 { color: #6b6490 !important; }
+
+        /* Border overrides */
+        [data-theme="dark"] .border-slate-200,
+        [data-theme="dark"] .border-slate-100 { border-color: var(--border) !important; }
+
+        /* Cards / panels */
+        [data-theme="dark"] .rounded-2xl.bg-white,
+        [data-theme="dark"] .rounded-xl.bg-white,
+        [data-theme="dark"] .rounded-2xl.bg-slate-50 { background: var(--bg-card) !important; }
+
+        /* Glass header */
+        [data-theme="dark"] .glass {
+            background: var(--glass-bg) !important;
+            border-color: var(--glass-border) !important;
+            box-shadow: var(--glow), 0 1px 0 rgba(255,255,255,0.04) !important;
+        }
+
+        /* Input / select / textarea */
+        [data-theme="dark"] input,
+        [data-theme="dark"] select,
+        [data-theme="dark"] textarea {
+            background: var(--bg-input) !important;
+            border-color: var(--border) !important;
+            color: var(--text-base) !important;
+        }
+        [data-theme="dark"] input::placeholder,
+        [data-theme="dark"] textarea::placeholder { color: var(--text-muted) !important; }
+
+        /* Table */
+        [data-theme="dark"] table { background: var(--bg-card) !important; }
+        [data-theme="dark"] thead th { background: var(--bg-card2) !important; color: var(--text-muted) !important; border-color: var(--border2) !important; }
+        [data-theme="dark"] tbody td { border-color: var(--border2) !important; }
+        [data-theme="dark"] .table-row:hover { background: var(--table-hover) !important; }
+
+        /* Stat cards */
+        [data-theme="dark"] .stat-card { background: var(--stat-bg) !important; border-color: var(--border) !important; box-shadow: var(--shadow) !important; }
+
+        /* Modals */
+        [data-theme="dark"] [id^="modal"] > div { background: var(--bg-card) !important; border: 1px solid var(--border) !important; }
+        [data-theme="dark"] .border-t.border-slate-100 { border-color: var(--border2) !important; }
+        [data-theme="dark"] .border-b.border-slate-100 { border-color: var(--border2) !important; }
+        [data-theme="dark"] .bg-slate-50.border-t { background: var(--bg-card2) !important; }
+
+        /* Buttons secondary */
+        [data-theme="dark"] button.hover\:bg-slate-200:not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-emerald"]):not([class*="bg-amber"]):not([class*="bg-blue"]) {
+            color: var(--text-muted) !important;
+        }
+
+        /* Tabs */
+        [data-theme="dark"] .tab-btn { color: var(--tab-text) !important; }
+        [data-theme="dark"] .tab-btn.active { color: var(--tab-active) !important; border-bottom-color: var(--tab-border) !important; }
+        [data-theme="dark"] .tab-btn:hover { color: var(--text-base) !important; }
+
+        /* Dark glow effect on cards */
+        [data-theme="dark"] .stat-card:hover {
+            box-shadow: 0 0 30px rgba(139,92,246,0.2), var(--shadow) !important;
+            border-color: rgba(139,92,246,0.4) !important;
+        }
+        [data-theme="dark"] .card-hover:hover {
+            box-shadow: 0 0 25px rgba(139,92,246,0.18) !important;
+            border-color: rgba(167,139,250,0.35) !important;
+        }
+
+        /* Checkbox list */
+        [data-theme="dark"] #teacherCheckboxList,
+        [data-theme="dark"] #attachmentGroup { background: var(--bg-input) !important; border-color: var(--border) !important; }
+        [data-theme="dark"] #teacherCheckboxList label:hover { background: var(--bg-hover) !important; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 99px; }
+
+        /* Theme toggle button */
+        #themeToggle {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; cursor: pointer; border: none;
+            transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        [data-theme="dark"] #themeToggle {
+            background: rgba(167,139,250,0.15);
+            box-shadow: 0 0 12px rgba(167,139,250,0.3);
+        }
+        [data-theme="dark"] #themeToggle:hover {
+            background: rgba(167,139,250,0.25);
+            transform: rotate(20deg) scale(1.1);
+        }
+        [data-theme="light"] #themeToggle {
+            background: #fef3c7;
+            box-shadow: 0 2px 8px rgba(245,158,11,0.2);
+        }
+        [data-theme="light"] #themeToggle:hover {
+            background: #fde68a;
+            transform: rotate(-20deg) scale(1.1);
+        }
+
+        /* Dark login page tweak */
+        [data-theme="dark"] #viewLogin { background: linear-gradient(135deg,#06041a 0%,#120d2e 30%,#1a1040 60%,#200e4a 100%) !important; }
+
         h1 { font-size: 1.875rem; line-height: 1.2; }
         h2 { font-size: 1.5rem; line-height: 1.25; }
         h3 { font-size: 1.25rem; line-height: 1.3; }
         button, select, input, textarea { font-size: 1rem; }
         body, .glass, .stat-card, table, td, th { word-break: break-word; overflow-wrap: anywhere; }
         img, svg, video, canvas { max-width: 100%; height: auto; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 99px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
         .active-tool { background: linear-gradient(135deg, #eef2ff, #e0e7ff) !important; color: #4f46e5 !important; box-shadow: inset 0 0 0 2px #6366f1 !important; }
+        [data-theme="dark"] .active-tool { background: rgba(139,92,246,0.25) !important; color: #c4b5fd !important; box-shadow: inset 0 0 0 2px #7c3aed !important; }
         input[type=file].hidden-input { display: none; }
         
         /* Animations */
@@ -245,6 +441,7 @@
                 <h1 class="text-base sm:text-xl font-bold text-slate-800 truncate">E-Doc <span class="text-indigo-600">System</span></h1>
             </div>
             <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                <button id="themeToggle" onclick="toggleTheme()" title="เปลี่ยนธีม">🌙</button>
                 <span id="userRoleBadge" class="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-bold bg-slate-100 text-slate-600 truncate max-w-[120px] sm:max-w-none">Role</span>
                 <button onclick="logout()" class="text-sm font-medium text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1 shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
@@ -757,6 +954,23 @@
         }
 
         function logout() { currentUser = null; switchView('viewLogin'); }
+
+        // ── Theme ──────────────────────────────────────────────────
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            const next = isDark ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            document.getElementById('themeToggle').textContent = next === 'dark' ? '🌙' : '☀️';
+            localStorage.setItem('theme', next);
+        }
+        (function initTheme() {
+            const saved = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', saved);
+            const btn = document.getElementById('themeToggle');
+            if (btn) btn.textContent = saved === 'dark' ? '🌙' : '☀️';
+        })();
+        // ──────────────────────────────────────────────────────────
         function switchView(id) {
             ['viewLogin', 'viewDashboard', 'viewEditor'].forEach(v => document.getElementById(v).style.display = 'none');
             document.getElementById(id).style.display = 'flex';
