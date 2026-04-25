@@ -1526,9 +1526,9 @@
 
             gasCall('getDocumentBase64', { docId: doc.id }).then(async function(base64) {
                 if(base64) {
-                    await renderFileToEditor(base64, null, false);
                     renderAttachmentPanel(doc);
-                    showLoading(false);
+                    await renderFileToEditor(base64, null, false);
+                    // showLoading ถูก call ภายใน renderFileToEditor หลัง page 1 เสร็จ
                 } else {
                     renderFallbackEditor(doc);
                     showLoading(false);
@@ -1825,23 +1825,23 @@
                         imgSrc = await new Promise(r => { const rd = new FileReader(); rd.onload = e => r(e.target.result); rd.readAsDataURL(fileOrBase64); });
                     }
                 } else {
-                    const binaryString = window.atob(fileOrBase64);
-                    const bytes = new Uint8Array(binaryString.length);
-                    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-                    pdfDoc = await pdfjsLib.getDocument(bytes.buffer).promise;
+                    // fetch-decode เร็วกว่า atob+loop มาก
+                    const ab = await fetch(`data:application/pdf;base64,${fileOrBase64}`).then(r => r.arrayBuffer());
+                    pdfDoc = await pdfjsLib.getDocument(ab).promise;
                 }
 
                 if(pdfDoc) {
-                    const PDF_RENDER_SCALE = 2.0;
-                    for(let num = 1; num <= pdfDoc.numPages; num++) {
+                    const PDF_RENDER_SCALE = 1.5; // ลดจาก 2.0 → 1.5 เร็วขึ้น ~44%
+                    const displayWidth = 800;
+
+                    async function renderOnePage(num) {
                         const page = await pdfDoc.getPage(num);
                         const unscaledViewport = page.getViewport({scale: 1.0});
-                        const displayWidth = 800; 
                         const displayScale = displayWidth / unscaledViewport.width;
                         const hiResScale = displayScale * PDF_RENDER_SCALE;
                         const displayViewport = page.getViewport({scale: displayScale});
                         const hiResViewport = page.getViewport({scale: hiResScale});
-                        
+
                         const wrapper = document.createElement('div');
                         wrapper.className = 'bg-white shadow-lg relative border border-slate-200 mx-auto rounded-lg overflow-hidden';
                         const canvasEl = document.createElement('canvas');
@@ -1857,9 +1857,9 @@
                         const tempC = document.createElement('canvas');
                         tempC.width = hiResViewport.width; tempC.height = hiResViewport.height;
                         await page.render({canvasContext: tempC.getContext('2d'), viewport: hiResViewport}).promise;
-                        
+
                         await new Promise(r => {
-                            fabric.Image.fromURL(tempC.toDataURL('image/png'), img => {
+                            fabric.Image.fromURL(tempC.toDataURL('image/jpeg', 0.88), img => {
                                 fCanvas.setBackgroundImage(img, fCanvas.renderAll.bind(fCanvas), {
                                     scaleX: fCanvas.width / img.width, scaleY: fCanvas.height / img.height
                                 });
@@ -1867,6 +1867,13 @@
                                 r();
                             });
                         });
+                    }
+
+                    // แสดงหน้า 1 ก่อน แล้วค่อย render หน้าถัดไป async
+                    await renderOnePage(1);
+                    showLoading(false);
+                    for(let num = 2; num <= pdfDoc.numPages; num++) {
+                        await renderOnePage(num);
                     }
                 } else if (isImage) {
                     const wrapper = document.createElement('div');
