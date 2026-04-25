@@ -635,20 +635,12 @@
         // --- 1. GAS API URL (เปลี่ยนเป็น URL ของ Web App ที่ Deploy แล้ว) ---
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbzCHnYkofhWusd4vs73vJB93v-llTJEjvaeWD4mtSSckjcpPIqM76phuUDsWSmyT5XVow/exec';
 
-        const _GAS_GET_ACTIONS = ['getDashboardData','getTeacherList','getTeacherListFull','getNewRunningNo','getDocumentBase64'];
-
         async function gasCall(action, params) {
             params = params || {};
             try {
-                if (_GAS_GET_ACTIONS.includes(action)) {
-                    const url = new URL(GAS_URL);
-                    url.searchParams.set('action', action);
-                    Object.entries(params).forEach(function(kv) {
-                        url.searchParams.set(kv[0], typeof kv[1] === 'object' ? JSON.stringify(kv[1]) : String(kv[1]));
-                    });
-                    const res = await fetch(url.toString(), { redirect: 'follow' });
-                    return await res.json();
-                } else {
+                const dataStr = JSON.stringify(params);
+                // ถ้า payload ใหญ่เกิน 500KB (มักเป็น PDF/ไฟล์ใหญ่) → POST
+                if (dataStr.length > 512000) {
                     const body = Object.assign({ action: action }, params);
                     const res = await fetch(GAS_URL, {
                         method: 'POST',
@@ -656,8 +648,16 @@
                         body: JSON.stringify(body),
                         redirect: 'follow'
                     });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
                     return await res.json();
                 }
+                // ใช้ GET สำหรับทุก operation (หลีกเลี่ยง CORS ของ POST)
+                const url = new URL(GAS_URL);
+                url.searchParams.set('action', action);
+                if (dataStr !== '{}') url.searchParams.set('data', dataStr);
+                const res = await fetch(url.toString(), { redirect: 'follow' });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return await res.json();
             } catch (e) {
                 throw new Error(e.message || String(e));
             }
