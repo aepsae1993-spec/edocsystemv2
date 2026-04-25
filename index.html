@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th" data-theme="dark">
+<html lang="th" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -974,7 +974,7 @@
             localStorage.setItem('theme', next);
         }
         (function initTheme() {
-            const saved = localStorage.getItem('theme') || 'dark';
+            const saved = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', saved);
             const btn = document.getElementById('themeToggle');
             if (btn) btn.textContent = saved === 'dark' ? '🌙' : '☀️';
@@ -1831,7 +1831,7 @@
                 }
 
                 if(pdfDoc) {
-                    const PDF_RENDER_SCALE = 1.5; // ลดจาก 2.0 → 1.5 เร็วขึ้น ~44%
+                    const PDF_RENDER_SCALE = 2.0;
                     const displayWidth = 800;
 
                     async function renderOnePage(num) {
