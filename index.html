@@ -391,11 +391,16 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                         <span class="hidden sm:inline">กลับ</span>
                     </button>
-                    <div id="docInfoBadge" class="hidden items-center gap-2 border-l border-slate-300 pl-2 sm:pl-4 min-w-0">
-                        <span class="text-sm sm:text-base font-bold text-indigo-600 bg-indigo-50 px-2.5 sm:px-3 py-1 rounded-lg border border-indigo-200 truncate">เลขรับ: <span id="headerDocNo">-</span></span>
+                    <div id="docInfoBadge" class="hidden items-center gap-2 border-l border-slate-300 pl-2 sm:pl-4 min-w-0 flex-wrap">
+                        <span id="docNoBadge" class="text-sm sm:text-base font-bold text-indigo-600 bg-indigo-50 px-2.5 sm:px-3 py-1 rounded-lg border border-indigo-200 truncate">เลขรับ: <span id="headerDocNo">-</span></span>
                         <button id="btnEditDocNo" onclick="editDocNoInline()" class="hidden text-indigo-500 hover:text-indigo-700 hover:bg-indigo-100 p-1 rounded-lg transition" title="แก้ไขเลขรับ">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                         </button>
+                        <select id="docNoModeSelect" class="hidden text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer" onchange="applyDocNoMode(this.value)" title="โหมดแสดงเลขรับ">
+                            <option value="show">📋 แสดงในเอกสาร</option>
+                            <option value="none">🚫 ไม่ใส่เลขรับ</option>
+                            <option value="hidden">👻 เก็บค่า ไม่แสดง</option>
+                        </select>
                     </div>
                 </div>
                 
@@ -1442,6 +1447,8 @@
             activeCanvases = [];
         }
 
+        let docNoMode = 'show'; // 'show' | 'none' | 'hidden'
+
         function setupEditorUI(state) {
             document.getElementById('actionBtnClerk').style.display = 'none';
             document.getElementById('actionBtnDirector').style.display = 'none';
@@ -1450,12 +1457,17 @@
             document.getElementById('actionBtnComplete').style.display = 'none';
             document.getElementById('actionBtnViewDrive').style.display = 'none';
             document.getElementById('btnEditDocNo').style.display = 'none';
-            
+            document.getElementById('docNoModeSelect').style.display = 'none';
+            docNoMode = 'show';
+
             document.getElementById('docInfoBadge').style.display = 'flex';
             document.getElementById('headerDocNo').innerText = currentDocument ? currentDocument.docNo : newGeneratedDocNo;
+            document.getElementById('docNoBadge').style.opacity = '1';
 
             if(currentUser.role === 'clerk') {
                 document.getElementById('btnEditDocNo').style.display = 'inline-flex';
+                document.getElementById('docNoModeSelect').style.display = 'inline-block';
+                document.getElementById('docNoModeSelect').value = 'show';
                 if(state === 'new') document.getElementById('actionBtnClerk').style.display = 'flex';
                 if(currentDocument && currentDocument.status.includes('อนุมัติ')) document.getElementById('actionBtnDistribute').style.display = 'flex';
             } else if (currentUser.role === 'director' && currentDocument && currentDocument.status.includes('รอ ผอ.')) {
@@ -1498,6 +1510,53 @@
                 });
             } else {
                 newGeneratedDocNo = trimmed;
+            }
+        }
+
+        function applyDocNoMode(mode) {
+            docNoMode = mode;
+            const badge = document.getElementById('docNoBadge');
+            if (mode === 'none') {
+                // ลบข้อความเลขรับออกจาก canvas ทุกหน้า
+                badge.style.opacity = '0.4';
+                activeCanvases.forEach(function(item) {
+                    const canvas = item.canvas;
+                    const toRemove = canvas.getObjects().filter(function(obj) {
+                        return (obj.type === 'text' || obj.type === 'i-text') && obj.text && obj.text.startsWith('เลขรับ:');
+                    });
+                    toRemove.forEach(function(obj) { canvas.remove(obj); });
+                    canvas.renderAll();
+                });
+                canvasEdited = true;
+                showToast('🚫 ลบเลขรับออกจากเอกสารแล้ว (ยังเก็บค่าไว้ในระบบ)');
+            } else if (mode === 'hidden') {
+                // ลบออกจาก canvas แต่เก็บค่าไว้ใน docNo
+                badge.style.opacity = '0.6';
+                activeCanvases.forEach(function(item) {
+                    const canvas = item.canvas;
+                    const toRemove = canvas.getObjects().filter(function(obj) {
+                        return (obj.type === 'text' || obj.type === 'i-text') && obj.text && obj.text.startsWith('เลขรับ:');
+                    });
+                    toRemove.forEach(function(obj) { canvas.remove(obj); });
+                    canvas.renderAll();
+                });
+                canvasEdited = true;
+                showToast('👻 เลขรับจะไม่แสดงในเอกสาร แต่บันทึกและแจ้งเตือนตามปกติ');
+            } else {
+                // show — ใส่กลับคืน
+                badge.style.opacity = '1';
+                const docNo = document.getElementById('headerDocNo').innerText;
+                activeCanvases.forEach(function(item) {
+                    // ลบอันเก่าออกก่อน (ป้องกันซ้ำ)
+                    const canvas = item.canvas;
+                    const toRemove = canvas.getObjects().filter(function(obj) {
+                        return (obj.type === 'text' || obj.type === 'i-text') && obj.text && obj.text.startsWith('เลขรับ:');
+                    });
+                    toRemove.forEach(function(obj) { canvas.remove(obj); });
+                    addAutoRunningText(canvas, docNo);
+                });
+                canvasEdited = true;
+                showToast('📋 แสดงเลขรับในเอกสารแล้ว');
             }
         }
 
@@ -1581,7 +1640,7 @@
                                 fCanvas.setBackgroundImage(img, fCanvas.renderAll.bind(fCanvas), {
                                     scaleX: fCanvas.width / img.width, scaleY: fCanvas.height / img.height
                                 });
-                                if(autoNumber && num === 1) addAutoRunningText(fCanvas, autoNumber); 
+                                if(autoNumber && num === 1 && docNoMode === 'show') addAutoRunningText(fCanvas, autoNumber);
                                 r();
                             });
                         });
@@ -1609,7 +1668,7 @@
                                 fCanvas.setBackgroundImage(img, fCanvas.renderAll.bind(fCanvas), {
                                     scaleX: fCanvas.width / img.width, scaleY: fCanvas.height / img.height
                                 });
-                                if(autoNumber) addAutoRunningText(fCanvas, autoNumber);
+                                if(autoNumber && docNoMode === 'show') addAutoRunningText(fCanvas, autoNumber);
                                 r();
                             });
                         }
