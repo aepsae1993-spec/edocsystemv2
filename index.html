@@ -879,7 +879,8 @@
 
         // --- 2. System Variables ---
         let currentUser = null;
-        let currentDocument = null; 
+        let currentDocument = null;
+        const pdfCache = new Map(); // cache base64 pdf ในแรม
         let newGeneratedDocNo = '';
         let activeCanvases = [];
         let canvasEdited = false; // ติดตามว่ามีการแก้ไขบน canvas หรือไม่
@@ -1519,16 +1520,21 @@
             setupEditorUI('existing');
             switchView('viewEditor');
             
+            renderAttachmentPanel(doc);
+
+            if(pdfCache.has(doc.id)) {
+                // โหลดจากแรม — ไม่ต้อง call GAS
+                await renderFileToEditor(pdfCache.get(doc.id), null, false);
+                return;
+            }
+
             showLoading(true);
             document.getElementById('loadingText').innerText = "กำลังดึงข้อมูล PDF จากเซิร์ฟเวอร์...";
 
-            // ครูไม่ต้องเปิด canvas แล้ว → ไม่ track read ตรงนี้
-
             gasCall('getDocumentBase64', { docId: doc.id }).then(async function(base64) {
                 if(base64) {
-                    renderAttachmentPanel(doc);
+                    pdfCache.set(doc.id, base64); // เก็บลงแรม
                     await renderFileToEditor(base64, null, false);
-                    // showLoading ถูก call ภายใน renderFileToEditor หลัง page 1 เสร็จ
                 } else {
                     renderFallbackEditor(doc);
                     showLoading(false);
