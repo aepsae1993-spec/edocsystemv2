@@ -484,10 +484,13 @@
                     </select>
                 </div>
                 <div id="teacherSelectGroup" class="hidden flex-col gap-1.5">
-                    <label class="font-semibold text-slate-700 text-base">👥 แจ้งเตือนถึง <span class="text-sm text-slate-400 font-normal">(กด Ctrl เพื่อเลือกหลายคน)</span></label>
-                    <select id="teacherSelect" multiple class="bg-slate-50 border border-slate-200 rounded-xl p-2 h-32 text-base focus:ring-2 focus:ring-indigo-500 outline-none">
-                        <option value="all">📢 ทุกบุคลากร</option>
-                    </select>
+                    <label class="font-semibold text-slate-700 text-base">👥 แจ้งเตือนถึง</label>
+                    <div id="teacherCheckboxList" class="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 max-h-48 overflow-y-auto">
+                        <label class="flex items-center gap-3 px-4 py-2.5 hover:bg-indigo-50 cursor-pointer transition">
+                            <input type="checkbox" id="chk_all" value="all" class="w-5 h-5 accent-indigo-600 rounded" onchange="handleAllCheckbox(this)">
+                            <span class="font-semibold text-slate-700 text-base">📢 ทุกบุคลากร</span>
+                        </label>
+                    </div>
                 </div>
                 <div class="flex flex-col gap-1.5">
                     <label class="font-semibold text-slate-700 text-base">หมายเหตุ / ข้อความสั่งการ</label>
@@ -692,13 +695,11 @@
             document.getElementById('loadingText').innerText = "กำลังดึงรายชื่อบุคลากร...";
             gasCall('getTeacherList').then(function(teachers) {
                 globalTeacherList = teachers || [];
-                const distSelect = document.getElementById('teacherSelect');
                 if (loginSelect) loginSelect.innerHTML = '<option value="">-- เลือกชื่อของคุณ --</option>';
-                if (distSelect) distSelect.innerHTML = '<option value="all">📢 แจ้งเตือนทุกคน</option>';
                 globalTeacherList.forEach(t => {
                     if (loginSelect) loginSelect.innerHTML += `<option value="${t.id}">${t.name} (${t.department})</option>`;
-                    if (distSelect) distSelect.innerHTML += `<option value="${t.id}">${t.name} (${t.department})</option>`;
                 });
+                rebuildTeacherCheckboxes();
                 teacherListLoaded = true;
                 teacherListLoading = false;
                 showLoading(false);
@@ -1310,6 +1311,75 @@
             });
         }
 
+        // ── Checkbox teacher helpers ──────────────────────────────────
+        function rebuildTeacherCheckboxes() {
+            const list = document.getElementById('teacherCheckboxList');
+            if (!list) return;
+            // เก็บ "all" checkbox เดิมไว้ ลบแถวครูเก่าออก
+            const allRow = list.querySelector('label:first-child');
+            list.innerHTML = '';
+            if (allRow) list.appendChild(allRow);
+            globalTeacherList.forEach(function(t) {
+                const lbl = document.createElement('label');
+                lbl.className = 'flex items-center gap-3 px-4 py-2.5 hover:bg-indigo-50 cursor-pointer transition';
+                lbl.innerHTML = `<input type="checkbox" id="chk_${t.id}" value="${t.id}" class="w-5 h-5 accent-indigo-600 rounded" onchange="handleTeacherCheckbox(this)"><span class="text-slate-700 text-base">${t.name} <span class="text-slate-400 text-sm">(${t.department})</span></span>`;
+                list.appendChild(lbl);
+            });
+        }
+
+        function handleAllCheckbox(el) {
+            const list = document.getElementById('teacherCheckboxList');
+            list.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
+                cb.checked = el.checked;
+            });
+        }
+
+        function handleTeacherCheckbox(el) {
+            if (!el.checked) {
+                const allCb = document.getElementById('chk_all');
+                if (allCb) allCb.checked = false;
+            } else {
+                // ถ้าเลือกครบทุกคนให้ติ๊ก "ทุกบุคลากร" ด้วย
+                const list = document.getElementById('teacherCheckboxList');
+                const teacherCbs = Array.from(list.querySelectorAll('input[type=checkbox]:not(#chk_all)'));
+                if (teacherCbs.every(function(cb) { return cb.checked; })) {
+                    const allCb = document.getElementById('chk_all');
+                    if (allCb) allCb.checked = true;
+                }
+            }
+        }
+
+        function getCheckedTeachers() {
+            const allCb = document.getElementById('chk_all');
+            if (allCb && allCb.checked) return ['all'];
+            const list = document.getElementById('teacherCheckboxList');
+            if (!list) return [];
+            const vals = [];
+            list.querySelectorAll('input[type=checkbox]:not(#chk_all):checked').forEach(function(cb) {
+                vals.push(cb.value);
+            });
+            return vals;
+        }
+
+        function setCheckedTeachers(targets) {
+            const list = document.getElementById('teacherCheckboxList');
+            if (!list) return;
+            list.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
+                cb.checked = targets.includes(cb.value);
+            });
+            // ถ้า targets มี 'all' ให้ติ๊กทุกอัน
+            if (targets.includes('all')) {
+                list.querySelectorAll('input[type=checkbox]').forEach(function(cb) { cb.checked = true; });
+            }
+        }
+
+        function resetTeacherCheckboxes() {
+            const list = document.getElementById('teacherCheckboxList');
+            if (!list) return;
+            list.querySelectorAll('input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+        }
+        // ─────────────────────────────────────────────────────────────
+
         function parseAttachmentUrls(urlStr) {
             if (!urlStr || urlStr === '[]') return [];
             if (urlStr.startsWith('[')) {
@@ -1434,24 +1504,16 @@
         // ค้นหาและอัปเดต text "เลขรับ:" บน canvas ทุกหน้า
         function updateDocNoOnCanvas(newDocNo) {
             if (!activeCanvases.length) return;
-            const canvas = activeCanvases[0].canvas;
-            canvas.getObjects().forEach(obj => {
-                // กรณี Group (rect + text) ที่สร้างจาก addAutoRunningText
-                if (obj.type === 'group' && obj._objects) {
-                    obj._objects.forEach(child => {
-                        if (child.type === 'text' && child.text && child.text.startsWith('เลขรับ:')) {
-                            child.set('text', `เลขรับ: ${newDocNo}`);
-                        }
-                    });
-                    obj.dirty = true;
-                }
-                // กรณี IText/Text ที่อาจแก้ไขเอง
-                if ((obj.type === 'text' || obj.type === 'i-text') && obj.text && obj.text.startsWith('เลขรับ:')) {
-                    obj.set('text', `เลขรับ: ${newDocNo}`);
-                }
+            activeCanvases.forEach(function(item) {
+                const canvas = item.canvas;
+                canvas.getObjects().forEach(function(obj) {
+                    if ((obj.type === 'text' || obj.type === 'i-text') && obj.text && obj.text.startsWith('เลขรับ:')) {
+                        obj.set({ text: `เลขรับ: ${newDocNo}`, left: canvas.width - 20 });
+                    }
+                });
+                canvas.renderAll();
             });
-            canvas.renderAll();
-            canvasEdited = true; // บังคับสร้าง PDF ใหม่เมื่อส่ง
+            canvasEdited = true;
         }
 
         // เปิดเอกสารใน Google Drive โดยตรง
@@ -1561,10 +1623,12 @@
         }
 
         function addAutoRunningText(canvas, text) {
-            const rect = new fabric.Rect({ fill: 'white', width: 170, height: 40, opacity: 0.95, rx: 8, ry: 8 });
-            const txt = new fabric.Text(`เลขรับ: ${text}`, { fontFamily: 'Sarabun', fontSize: 22, fill: '#dc2626', left: 12, top: 8 });
-            const group = new fabric.Group([rect, txt], { left: canvas.width - 190, top: 20, borderColor: '#6366f1', cornerColor: '#6366f1', cornerSize: 8, transparentCorners: false });
-            canvas.add(group); canvas.renderAll();
+            const txt = new fabric.Text(`เลขรับ: ${text}`, {
+                fontFamily: 'Sarabun', fontSize: 22, fill: '#dc2626',
+                left: canvas.width - 20, top: 20, originX: 'right',
+                borderColor: '#6366f1', cornerColor: '#6366f1', cornerSize: 8, transparentCorners: false
+            });
+            canvas.add(txt); canvas.renderAll();
         }
 
         function closeEditor() { switchView('viewDashboard'); }
@@ -1763,6 +1827,7 @@
             docTypeGroup.style.display = 'none';
             document.getElementById('urgentCheckbox').checked = false;
             document.getElementById('attachmentUpload').value = '';
+            resetTeacherCheckboxes();
             document.getElementById('attachmentFileList').textContent = '';
             titleInput.value = currentDocument ? currentDocument.title : '';
 
@@ -1781,9 +1846,7 @@
                     for (let opt of sel.options) { opt.selected = (opt.value === currentDocument.docType); }
                 }
                 if (currentDocument && currentDocument.target) {
-                    const targets = currentDocument.target.split(',').map(function(s) { return s.trim(); });
-                    const sel = document.getElementById('teacherSelect');
-                    for (let opt of sel.options) { opt.selected = targets.includes(opt.value); }
+                    setCheckedTeachers(currentDocument.target.split(',').map(function(s) { return s.trim(); }));
                 }
             } else if (action === 'distribute') {
                 titleEl.innerText = "แจกจ่ายเอกสารให้บุคลากร";
@@ -1791,9 +1854,7 @@
                 attachGroup.style.display = 'flex';
                 urgentGroup.style.display = 'flex';
                 if (currentDocument && currentDocument.target) {
-                    const targets = currentDocument.target.split(',').map(function(s) { return s.trim(); });
-                    const sel = document.getElementById('teacherSelect');
-                    for (let opt of sel.options) { opt.selected = targets.includes(opt.value); }
+                    setCheckedTeachers(currentDocument.target.split(',').map(function(s) { return s.trim(); }));
                 }
             }
         }
@@ -1870,8 +1931,7 @@
 
                 let targets = [];
                 if (currentSubmitAction === 'distribute' || currentSubmitAction === 'director') {
-                    const selectEl = document.getElementById('teacherSelect');
-                    for (let opt of selectEl.selectedOptions) targets.push(opt.value);
+                    targets = getCheckedTeachers();
                 }
 
                 const docTypeEl = document.getElementById('docTypeSelect');
@@ -2319,13 +2379,11 @@
             gasCall('getTeacherList').then(function(teachers) {
                 globalTeacherList = teachers || [];
                 const loginSelect = document.getElementById('loginTeacherSelect');
-                const distSelect = document.getElementById('teacherSelect');
                 loginSelect.innerHTML = '<option value="">-- เลือกชื่อของคุณ --</option>';
-                distSelect.innerHTML = '<option value="all">📢 ทุกบุคลากร</option>';
                 globalTeacherList.forEach(t => {
                     loginSelect.innerHTML += `<option value="${t.id}">${t.name} (${t.department})</option>`;
-                    distSelect.innerHTML += `<option value="${t.id}">${t.name} (${t.department})</option>`;
                 });
+                rebuildTeacherCheckboxes();
             });
 
             // Re-render management table
