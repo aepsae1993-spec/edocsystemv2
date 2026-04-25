@@ -1,0 +1,2250 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>E-Document System</title>
+    
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- Fonts & Tailwind -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: { 
+                    fontFamily: { 
+                        sans: ['IBM Plex Sans Thai', 'Sarabun', 'sans-serif'] 
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --brand-grad: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+        }
+        html { font-size: 17px; }
+        @media (max-width: 639px) { html { font-size: 16px; } }
+        body { overscroll-behavior: none; font-size: 1rem; letter-spacing: 0.01em; }
+        h1 { font-size: 1.875rem; line-height: 1.2; }
+        h2 { font-size: 1.5rem; line-height: 1.25; }
+        h3 { font-size: 1.25rem; line-height: 1.3; }
+        button, select, input, textarea { font-size: 1rem; }
+        body, .glass, .stat-card, table, td, th { word-break: break-word; overflow-wrap: anywhere; }
+        img, svg, video, canvas { max-width: 100%; height: auto; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .active-tool { background: linear-gradient(135deg, #eef2ff, #e0e7ff) !important; color: #4f46e5 !important; box-shadow: inset 0 0 0 2px #6366f1 !important; }
+        input[type=file].hidden-input { display: none; }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        @keyframes countUp {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .animate-fadeInUp { animation: fadeInUp 0.4s ease-out both; }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out both; }
+        .animate-slideInRight { animation: slideInRight 0.4s ease-out both; }
+        .animate-countUp { animation: countUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+        .stagger-1 { animation-delay: 0.05s; }
+        .stagger-2 { animation-delay: 0.1s; }
+        .stagger-3 { animation-delay: 0.15s; }
+        .stagger-4 { animation-delay: 0.2s; }
+        
+        /* Glass morphism */
+        .glass { background: rgba(255,255,255,0.78); backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%); }
+        .text-gradient { background: var(--brand-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .shadow-luxe { box-shadow: 0 20px 50px -20px rgba(99,102,241,0.35), 0 8px 16px -8px rgba(139,92,246,0.2); }
+        
+        /* Card hover */
+        .card-hover { transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), box-shadow 0.25s ease, border-color 0.25s ease; }
+        .card-hover:hover { transform: translateY(-3px); box-shadow: 0 12px 30px -8px rgba(79,70,229,0.25); }
+        
+        /* Progress bar animation */
+        .progress-bar-fill {
+            transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        /* Tab style */
+        .tab-btn {
+            position: relative;
+            padding: 10px 16px;
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.2s;
+            white-space: nowrap;
+            border-bottom: 3px solid transparent;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+        @media (min-width: 640px) {
+            .tab-btn { padding: 12px 22px; font-size: 16px; }
+        }
+        .tab-btn:hover { color: #334155; }
+        .tab-btn.active { 
+            color: #4f46e5; 
+            border-bottom-color: #4f46e5;
+        }
+        
+        /* Search bar */
+        .search-input:focus { box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); }
+        
+        /* Stat card */
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.85));
+            backdrop-filter: blur(14px) saturate(140%);
+            border: 1px solid rgba(255,255,255,0.6);
+            box-shadow: 0 4px 20px -6px rgba(15, 23, 42, 0.08);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px -10px rgba(99,102,241,0.25); }
+        
+        /* Table row hover */
+        .table-row { transition: all 0.15s ease; }
+        .table-row:hover { background-color: #f5f3ff; }
+        
+        /* Status badge */
+        .status-badge { 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 4px; 
+            font-size: 13px; 
+            font-weight: 600; 
+            padding: 4px 10px; 
+            border-radius: 999px; 
+            white-space: nowrap;
+        }
+        @media (min-width: 640px) {
+            .status-badge { font-size: 14px; padding: 5px 12px; }
+        }
+        
+        /* Ring animation for progress */
+        .ring-progress {
+            transition: stroke-dashoffset 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Mobile-specific fixes */
+        @media (max-width: 639px) {
+            .mobile-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .mobile-scroll-x::-webkit-scrollbar { display: none; }
+            /* ป้องกันปุ่ม/เมนูล้นขอบ */
+            .mobile-wrap { flex-wrap: wrap; }
+            /* ตารางใหญ่ scroll แนวนอนแทนล้นขอบ */
+            .data-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            /* บังคับ container ไม่ให้กว้างเกินจอ */
+            #viewDashboard, #viewEditor, #viewLogin { max-width: 100vw; overflow-x: hidden; }
+            /* ปุ่มหลายอัน wrap ลงบรรทัดใหม่ */
+            .btn-row { flex-wrap: wrap; gap: 0.5rem; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 h-screen flex flex-col overflow-hidden text-slate-800 text-base">
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[9999] flex-col justify-center items-center text-white hidden">
+        <div class="relative">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-400 mb-4"></div>
+            <div class="absolute inset-0 animate-ping rounded-full h-16 w-16 border-2 border-indigo-300 opacity-30"></div>
+        </div>
+        <h2 class="text-2xl font-bold mt-4">กำลังประมวลผล...</h2>
+        <p id="loadingText" class="text-slate-300 mt-2 text-base">โปรดรอการเชื่อมต่อฐานข้อมูล</p>
+    </div>
+
+    <!-- ==================== VIEW 1: LOGIN ==================== -->
+    <div id="viewLogin" class="absolute inset-0 flex items-center justify-center z-50" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 30%, #3730a3 60%, #4338ca 100%);">
+        <!-- Decorative shapes -->
+        <div class="absolute top-0 left-0 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+        <div class="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl translate-x-1/3 translate-y-1/3"></div>
+        
+        <div class="relative bg-white/95 backdrop-blur-xl p-6 sm:p-10 rounded-3xl shadow-luxe w-full max-w-lg text-center mx-4 animate-fadeInUp border border-white/60">
+            <div class="w-20 h-20 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/40 rotate-3">
+                <svg class="w-10 h-10 -rotate-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-bold text-gradient mb-2">E-Document System</h1>
+            <p class="text-slate-500 mb-8 text-base sm:text-lg">ระบบสารบรรณอิเล็กทรอนิกส์</p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                <button onclick="login('admin')" class="group p-5 bg-slate-50 border-2 border-slate-200 rounded-2xl hover:border-slate-400 hover:bg-slate-100 font-bold text-slate-700 transition-all card-hover">
+                    <div class="text-3xl mb-2">🛠️</div>
+                    <div class="text-base sm:text-lg">แอดมิน</div>
+                </button>
+                <button onclick="login('clerk')" class="group p-5 bg-indigo-50 border-2 border-indigo-200 rounded-2xl hover:border-indigo-400 hover:bg-indigo-100 font-bold text-indigo-700 transition-all card-hover">
+                    <div class="text-3xl mb-2">👩‍💼</div>
+                    <div class="text-base sm:text-lg">ธุรการ</div>
+                </button>
+                <button onclick="login('director')" class="group p-5 bg-purple-50 border-2 border-purple-200 rounded-2xl hover:border-purple-400 hover:bg-purple-100 font-bold text-purple-700 transition-all card-hover">
+                    <div class="text-3xl mb-2">👨‍💼</div>
+                    <div class="text-base sm:text-lg">ผู้อำนวยการ</div>
+                </button>
+            </div>
+            
+            <div class="p-5 bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-2xl text-left">
+                <span class="font-bold text-emerald-800 flex items-center gap-2 mb-3 text-base sm:text-lg">
+                    <span class="w-8 h-8 bg-emerald-500 text-white rounded-lg flex items-center justify-center text-sm">👨‍🏫</span>
+                    เข้าสู่ระบบครู / บุคลากร
+                </span>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <select id="loginTeacherSelect" onfocus="ensureTeacherListLoaded()" onmousedown="ensureTeacherListLoaded()" class="flex-1 p-3 rounded-xl border border-emerald-300 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                        <option value="">-- คลิกเพื่อโหลดรายชื่อ --</option>
+                    </select>
+                    <button onclick="loginAsTeacher()" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-5 py-3 font-bold transition shadow-sm text-base">เข้าสู่ระบบ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== VIEW 2: DASHBOARD ==================== -->
+    <div id="viewDashboard" class="hidden flex-1 flex flex-col h-full z-40 bg-slate-50">
+        <!-- Header -->
+        <header class="h-14 sm:h-16 glass border-b border-slate-200/80 flex items-center justify-between px-3 sm:px-6 shrink-0 shadow-sm sticky top-0 z-30">
+            <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div class="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm shrink-0">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <h1 class="text-base sm:text-xl font-bold text-slate-800 truncate">E-Doc <span class="text-indigo-600">System</span></h1>
+            </div>
+            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                <span id="userRoleBadge" class="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-bold bg-slate-100 text-slate-600 truncate max-w-[120px] sm:max-w-none">Role</span>
+                <button onclick="logout()" class="text-sm font-medium text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1 shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    <span class="hidden sm:inline">ออก</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-auto">
+            <div class="max-w-7xl mx-auto p-3 sm:p-6">
+                
+                <!-- Overdue Alert Banner -->
+                <div id="overdueAlert" class="hidden mb-4 bg-red-50 border border-red-200 rounded-2xl p-4 animate-fadeInUp">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center text-red-600 shrink-0 text-lg">🚨</div>
+                        <div class="flex-1">
+                         <h3 class="font-bold text-red-800 text-base">เอกสารค้างเกิน 24 ชม.</h3>
+                            <p id="overdueMessage" class="text-red-600 text-sm mt-1"></p>
+                            <div id="overdueList" class="mt-2 space-y-1"></div>
+                        </div>
+                        <button onclick="document.getElementById('overdueAlert').classList.add('hidden')" class="text-red-300 hover:text-red-500 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dashboard Stats Cards -->
+                <div id="dashboardStats" class="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+                    <!-- Stats will be injected here -->
+                </div>
+                
+                <!-- Progress Ring (สำหรับครู) -->
+                <div id="progressSection" class="hidden mb-6">
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                        <div class="flex flex-col md:flex-row items-center gap-6">
+                            <div class="relative">
+                                <svg width="120" height="120" viewBox="0 0 120 120">
+                                    <circle cx="60" cy="60" r="52" fill="none" stroke="#e2e8f0" stroke-width="8"/>
+                                    <circle id="progressRing" cx="60" cy="60" r="52" fill="none" stroke="url(#progressGradient)" stroke-width="8" stroke-linecap="round" stroke-dasharray="326.73" stroke-dashoffset="326.73" transform="rotate(-90 60 60)" class="ring-progress"/>
+                                    <defs>
+                                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#6366f1"/>
+                                            <stop offset="100%" stop-color="#06b6d4"/>
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <span id="progressPercent" class="text-2xl font-bold text-slate-800">0%</span>
+                                </div>
+                            </div>
+                            <div class="text-center md:text-left flex-1">
+                                <h3 class="text-lg font-bold text-slate-800 mb-1">ภาพรวมงานของคุณ</h3>
+                                <p class="text-slate-500 text-sm mb-3">สรุปความคืบหน้าการดำเนินงานเอกสาร</p>
+                                <div class="flex gap-4 justify-center md:justify-start">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3 h-3 rounded-full bg-indigo-500"></div>
+                                        <span class="text-sm text-slate-600">เสร็จสิ้น: <strong id="statCompleted">0</strong></span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3 h-3 rounded-full bg-amber-400"></div>
+                                        <span class="text-sm text-slate-600">รอดำเนินการ: <strong id="statPending">0</strong></span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3 h-3 rounded-full bg-slate-300"></div>
+                                        <span class="text-sm text-slate-600">ทั้งหมด: <strong id="statTotal">0</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Toolbar: Search + Actions -->
+                <div class="flex flex-col gap-2 sm:gap-3 mb-3 sm:mb-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg sm:text-2xl font-bold text-slate-800">📋 กล่องเอกสาร</h2>
+                        <!-- New Doc Button -->
+                        <label id="btnNewDoc" for="docUpload" class="hidden bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-bold shadow-sm shadow-indigo-500/20 cursor-pointer transition-all flex items-center gap-2 text-sm sm:text-base whitespace-nowrap">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            <span class="hidden sm:inline">ลงรับเอกสารใหม่</span>
+                            <span class="sm:hidden">+ ลงรับ</span>
+                        </label>
+                        <input type="file" id="docUpload" accept="image/*,application/pdf" class="hidden-input">
+                    </div>
+                    <div class="flex items-center gap-2 w-full">
+                        <!-- Search -->
+                        <div class="relative flex-1">
+                            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            <input type="text" id="searchInput" placeholder="ค้นหาเลขรับ, ชื่อเอกสาร..." class="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 bg-white text-base focus:outline-none focus:border-indigo-400 search-input transition" oninput="renderTable()">
+                        </div>
+                        <!-- Filter -->
+                        <select id="filterStatus" class="py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl border border-slate-200 bg-white text-sm sm:text-base focus:outline-none focus:border-indigo-400 transition hidden max-w-[140px] sm:max-w-none" onchange="renderTable()">
+                            <option value="">ทุกสถานะ</option>
+                            <option value="รอ ผอ.">รอ ผอ.</option>
+                            <option value="อนุมัติ">อนุมัติแล้ว</option>
+                            <option value="แจกจ่าย">แจกจ่ายแล้ว</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- TAB BAR -->
+                <div id="dashboardTabs" class="flex gap-0.5 sm:gap-1 mb-3 sm:mb-4 border-b border-slate-200 pb-0 overflow-x-auto mobile-scroll-x -mx-3 px-3 sm:mx-0 sm:px-0">
+                    <!-- จะถูกเติมผ่าน JS ตาม Role -->
+                </div>
+
+                <!-- Table -->
+                <div class="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 overflow-hidden -mx-3 sm:mx-0">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse min-w-[520px]">
+                            <thead>
+                                <tr class="bg-slate-50/80 border-b border-slate-200 text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider">
+                                    <th class="p-3 sm:p-4">เลขรับ</th>
+                                    <th class="p-3 sm:p-4">ชื่อเอกสาร</th>
+                                    <th class="p-3 sm:p-4 hidden sm:table-cell">ผู้ส่ง</th>
+                                    <th class="p-3 sm:p-4">สถานะ</th>
+                                    <th class="p-3 sm:p-4 text-right">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="documentTableBody" class="text-base">
+                                <tr><td colspan="5" class="p-12 text-center text-slate-400">
+                                    <div class="animate-pulse flex flex-col items-center gap-2">
+                                        <div class="w-8 h-8 border-2 border-indigo-300 border-t-transparent rounded-full animate-spin"></div>
+                                        <span>กำลังโหลดข้อมูล...</span>
+                                    </div>
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Result count -->
+                    <div id="tableFooter" class="px-3 sm:px-4 py-2.5 sm:py-3 border-t border-slate-100 bg-slate-50/50 text-xs sm:text-sm text-slate-400 flex justify-between items-center">
+                        <span id="resultCount">กำลังโหลด...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== VIEW 3: EDITOR ==================== -->
+    <div id="viewEditor" class="hidden flex-1 flex-col h-full z-30 bg-slate-100">
+        <header class="glass border-b border-slate-200/80 shrink-0 shadow-sm relative z-20">
+            <div class="h-12 sm:h-14 flex items-center justify-between px-2 sm:px-4">
+                <div class="flex items-center gap-2 sm:gap-4 min-w-0">
+                    <button onclick="closeEditor()" class="text-slate-500 hover:bg-slate-100 px-2 sm:px-3 py-1.5 rounded-xl flex items-center gap-1 sm:gap-2 font-medium transition text-sm shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        <span class="hidden sm:inline">กลับ</span>
+                    </button>
+                    <div id="docInfoBadge" class="hidden items-center gap-2 border-l border-slate-300 pl-2 sm:pl-4 min-w-0">
+                        <span class="text-sm sm:text-base font-bold text-indigo-600 bg-indigo-50 px-2.5 sm:px-3 py-1 rounded-lg border border-indigo-200 truncate">เลขรับ: <span id="headerDocNo">-</span></span>
+                        <button id="btnEditDocNo" onclick="editDocNoInline()" class="hidden text-indigo-500 hover:text-indigo-700 hover:bg-indigo-100 p-1 rounded-lg transition" title="แก้ไขเลขรับ">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="editorActionButtons" class="flex gap-1.5 sm:gap-2 overflow-x-auto mobile-scroll-x mobile-wrap shrink-0 ml-2">
+                    <button id="actionBtnViewDrive" class="hidden bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-xl font-bold shadow-sm flex items-center gap-1.5 sm:gap-2 transition text-sm whitespace-nowrap" onclick="openInDrive()">📂 <span class="hidden sm:inline">ดูใน Drive</span><span class="sm:hidden">Drive</span></button>
+                    <button id="actionBtnAcknowledge" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white px-3 sm:px-4 py-2 rounded-xl font-bold shadow-sm flex items-center gap-1.5 sm:gap-2 transition text-sm whitespace-nowrap" onclick="acknowledgeDocument()"><span class="hidden sm:inline">รับทราบรับปฏิบัติ</span><span class="sm:hidden">รับทราบ</span> ✅</button>
+                    <button id="actionBtnComplete" class="hidden bg-emerald-500 hover:bg-emerald-600 text-white px-3 sm:px-4 py-2 rounded-xl font-bold shadow-sm flex items-center gap-1.5 sm:gap-2 transition text-sm whitespace-nowrap" onclick="completeDocument()">✅ เสร็จสิ้น</button>
+                    <button id="actionBtnClerk" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white px-3 sm:px-4 py-2 rounded-xl font-bold shadow-sm flex items-center gap-1.5 sm:gap-2 transition text-sm whitespace-nowrap" onclick="openSendModal('clerk')"><span class="hidden sm:inline">ส่งให้ ผอ.</span><span class="sm:hidden">ส่ง ผอ.</span> ➡️</button>
+                    <button id="actionBtnDistribute" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white px-3 sm:px-4 py-2 rounded-xl font-bold shadow-sm flex items-center gap-1.5 sm:gap-2 transition text-sm whitespace-nowrap" onclick="openSendModal('distribute')"><span class="hidden sm:inline">แจกจ่ายให้ครู</span><span class="sm:hidden">แจกจ่าย</span> 📢</button>
+                    <button id="actionBtnDirector" class="hidden bg-purple-600 hover:bg-purple-700 text-white px-3 sm:px-4 py-2 rounded-xl font-bold shadow-sm flex items-center gap-1.5 sm:gap-2 transition text-sm whitespace-nowrap" onclick="openSendModal('director')"><span class="hidden sm:inline">ลงนาม & อนุมัติ</span><span class="sm:hidden">อนุมัติ</span> ✅</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex flex-1 overflow-hidden relative">
+            <aside class="w-12 sm:w-16 bg-white border-r border-slate-200 flex flex-col items-center py-2 sm:py-4 gap-2 sm:gap-3 shrink-0 z-10 shadow-sm overflow-y-auto">
+                <button id="tool-select" class="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl text-slate-600 hover:bg-slate-100 active-tool transition" onclick="setTool('select')" title="เลือก">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                </button>
+                <button id="tool-pen" class="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl text-slate-600 hover:bg-slate-100 transition" onclick="setTool('pen')" title="ปากกา">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                </button>
+                <button id="tool-text" class="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl text-slate-600 hover:bg-slate-100 transition" onclick="setTool('text')" title="ข้อความ">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                </button>
+                <div class="w-6 sm:w-8 h-px bg-slate-200 my-0.5 sm:my-1"></div>
+                <input type="color" id="colorPicker" value="#000000" class="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl cursor-pointer border-2 border-slate-200 p-0.5" onchange="updateDrawSettings()">
+                <button onclick="openStampGallery()" class="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 cursor-pointer text-center text-xs font-bold leading-tight transition" title="เพิ่มตรา/รูปภาพ">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span class="text-[9px] sm:text-[10px]">ตรา</span>
+                </button>
+                <input type="file" id="stampUpload" accept="image/png,image/jpeg" class="hidden-input" multiple>
+            </aside>
+            <main class="flex-1 overflow-auto p-2 sm:p-8 flex justify-center items-start" style="background: radial-gradient(circle at center, #f1f5f9 1px, transparent 1px); background-size: 20px 20px;">
+                <div id="scalableContent" class="flex flex-col gap-4 sm:gap-8 origin-top pb-20 items-center w-full"></div>
+            </main>
+        </div>
+    </div>
+
+    <!-- ==================== MODALS ==================== -->
+    <!-- Modal: Stamp Gallery -->
+    <div id="modalStampGallery" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[3000] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden animate-fadeInUp">
+            <div class="flex items-center justify-between p-5 border-b border-slate-200">
+                <h3 class="text-lg font-bold text-slate-800">🖼️ คลังรูปตรา / ลายเซ็น</h3>
+                <button onclick="closeModal('modalStampGallery')" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+            </div>
+            <div class="p-5 overflow-y-auto flex-1">
+                <label class="block w-full mb-4 cursor-pointer">
+                    <div class="border-2 border-dashed border-indigo-300 rounded-xl p-4 text-center hover:bg-indigo-50 transition">
+                        <svg class="w-8 h-8 mx-auto text-indigo-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        <span class="text-sm font-semibold text-indigo-600">อัพโหลดรูปใหม่ (บันทึกไว้ใช้ครั้งต่อไป)</span>
+                    </div>
+                    <input type="file" id="stampGalleryUpload" accept="image/png,image/jpeg" class="hidden" onchange="handleStampGalleryUpload(event)">
+                </label>
+                <div id="stampGalleryGrid" class="grid grid-cols-3 gap-3">
+                    <!-- Saved stamps will be rendered here -->
+                </div>
+                <div id="stampGalleryEmpty" class="text-center text-slate-400 text-sm py-8 hidden">
+                    <p>ยังไม่มีรูปที่บันทึกไว้</p>
+                    <p class="text-xs mt-1">อัพโหลดรูปตรา/ลายเซ็นเพื่อใช้ซ้ำได้</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Send -->
+    <div id="modalSend" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[3000] hidden items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden mx-4 animate-fadeInUp">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800" id="modalSendTitle">ดำเนินการ</h3>
+                <button onclick="closeModal('modalSend')" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">&times;</button>
+            </div>
+            <div class="p-6 flex flex-col gap-4">
+                <div id="docTitleGroup" class="flex flex-col gap-1.5">
+                    <label class="font-semibold text-slate-700 text-base">เรื่อง / ชื่อเอกสาร <span class="text-red-500">*</span></label>
+                    <input type="text" id="modalDocTitle" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="ระบุชื่อเรื่องของเอกสารฉบับนี้...">
+                </div>
+                <div id="teacherSelectGroup" class="hidden flex-col gap-1.5">
+                    <label class="font-semibold text-slate-700 text-base">เลือกครูผู้รับ <span class="text-sm text-slate-400 font-normal">(กด Ctrl เพื่อเลือกหลายคน)</span></label>
+                    <select id="teacherSelect" multiple class="bg-slate-50 border border-slate-200 rounded-xl p-2 h-32 text-base focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="all">📢 แจ้งเตือนทุกคน</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="font-semibold text-slate-700 text-base">หมายเหตุ / ข้อความสั่งการ</label>
+                    <textarea id="sendNote" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-base focus:ring-2 focus:ring-indigo-500 outline-none h-24 resize-none transition" placeholder="พิมพ์ข้อความเพิ่มเติม..."></textarea>
+                </div>
+                <div id="urgentGroup" class="hidden flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <input type="checkbox" id="urgentCheckbox" class="w-5 h-5 accent-red-600 rounded">
+                    <label for="urgentCheckbox" class="font-bold text-red-700 text-base cursor-pointer">🔴 เอกสารด่วนมาก <span class="font-normal text-red-500 text-sm">(แจ้งเตือนซ้ำทุก 2 ชม. จนกว่าจะดำเนินการ)</span></label>
+                </div>
+                <div id="attachmentGroup" class="hidden flex-col gap-1.5 p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl">
+                    <label class="font-semibold text-slate-700 text-base">📎 ไฟล์แนบเพิ่มเติม</label>
+                    <input type="file" id="attachmentUpload" class="block w-full text-base text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
+                </div>
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                <button onclick="closeModal('modalSend')" class="px-5 py-2.5 font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition">ยกเลิก</button>
+                <button onclick="processSubmit()" class="px-5 py-2.5 font-bold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 rounded-xl shadow-sm transition">ยืนยันบันทึก & ส่ง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Tracking -->
+    <div id="modalTracking" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[3000] hidden items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden mx-4 flex flex-col max-h-[80vh] animate-fadeInUp">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
+                <h3 class="text-xl font-bold text-slate-800">📊 ติดตามสถานะ</h3>
+                <button onclick="closeModal('modalTracking')" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">&times;</button>
+            </div>
+            <!-- Tracking summary bar -->
+            <div id="trackingSummary" class="px-6 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-4 text-xs font-medium text-slate-500 shrink-0">
+            </div>
+            <div class="p-0 overflow-y-auto flex-1">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead class="bg-slate-50 sticky top-0">
+                        <tr>
+                            <th class="p-3 font-semibold text-slate-500 text-xs uppercase border-b border-slate-200">ชื่อบุคลากร</th>
+                            <th class="p-3 font-semibold text-slate-500 text-xs uppercase border-b border-slate-200 w-36">สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trackingTableBody"></tbody>
+                </table>
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end shrink-0">
+                <button onclick="closeModal('modalTracking')" class="px-5 py-2 font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Teacher Summary -->
+    <div id="modalTeacherSummary" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[3000] hidden items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden mx-4 flex flex-col max-h-[85vh] animate-fadeInUp">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
+                <h3 class="text-xl font-bold text-slate-800">📊 สรุปผลงานครู/บุคลากร</h3>
+                <button onclick="closeModal('modalTeacherSummary')" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">&times;</button>
+            </div>
+            <div id="teacherSummaryContent" class="p-0 overflow-y-auto flex-1">
+                <div class="p-12 text-center text-slate-400"><div class="animate-pulse">กำลังโหลดข้อมูล...</div></div>
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end shrink-0">
+                <button onclick="closeModal('modalTeacherSummary')" class="px-5 py-2 font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Teacher Management -->
+    <div id="modalTeacherEdit" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[3000] hidden items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden mx-4 animate-fadeInUp">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800" id="modalTeacherTitle">➕ เพิ่มบุคลากร</h3>
+                <button onclick="closeModal('modalTeacherEdit')" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">&times;</button>
+            </div>
+            <div class="p-6 flex flex-col gap-4">
+                <input type="hidden" id="teacherEditOriginalId">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="font-semibold text-slate-700 text-sm">รหัส (ID) <span class="text-red-500">*</span></label>
+                        <input type="text" id="teacherEditId" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="เช่น t4">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="font-semibold text-slate-700 text-sm">ชื่อ-สกุล <span class="text-red-500">*</span></label>
+                        <input type="text" id="teacherEditName" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="ครูสมศรี">
+                    </div>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="font-semibold text-slate-700 text-sm">หมวดวิชา / แผนก <span class="text-red-500">*</span></label>
+                    <input type="text" id="teacherEditDept" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="คณิตศาสตร์">
+                </div>
+                <div class="flex flex-col gap-1.5 p-4 bg-green-50/50 border border-green-100 rounded-xl">
+                    <label class="font-semibold text-slate-700 text-sm">📲 LINE User ID (สำหรับแจ้งเตือนส่วนตัว)</label>
+                    <input type="text" id="teacherEditLine" class="bg-white border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-green-500 outline-none transition font-mono text-xs" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                    <p class="text-[10px] text-slate-400">ใส่ LINE User ID (ได้จากการพิมพ์ "id" ในแชท LINE OA) เพื่อรับแจ้งเตือนเอกสารส่วนตัว</p>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="font-semibold text-slate-700 text-sm">📁 Drive Folder ID (ส่วนตัว)</label>
+                    <input type="text" id="teacherEditDrive" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition font-mono text-xs" placeholder="(ไม่บังคับ)">
+                </div>
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                <button onclick="closeModal('modalTeacherEdit')" class="px-5 py-2.5 font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition">ยกเลิก</button>
+                <button onclick="saveTeacher()" class="px-5 py-2.5 font-bold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 rounded-xl shadow-sm transition">💾 บันทึก</button>
+            </div>
+        </div>
+    </div>
+    <div id="modalAdminEdit" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[3000] hidden items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden mx-4 animate-fadeInUp">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800">🛠️ แก้ไขเอกสาร</h3>
+                <button onclick="closeModal('modalAdminEdit')" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">&times;</button>
+            </div>
+            <div class="p-6 flex flex-col gap-4">
+                <input type="hidden" id="adminEditDocId">
+                <div class="flex flex-col gap-1.5">
+                    <label class="font-semibold text-slate-700 text-sm">เลขรับหนังสือ</label>
+                    <input type="text" id="adminEditDocNo" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="font-semibold text-slate-700 text-sm">ชื่อเอกสาร</label>
+                    <input type="text" id="adminEditTitle" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="font-semibold text-slate-700 text-sm">หมายเหตุ</label>
+                    <textarea id="adminEditNote" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none h-20 resize-none transition"></textarea>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="font-semibold text-slate-700 text-sm">ครูผู้รับ (เป้าหมาย)</label>
+                    <select id="adminEditTarget" multiple class="bg-slate-50 border border-slate-200 rounded-xl p-2 h-28 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="all">📢 ทุกคน</option>
+                    </select>
+                    <p class="text-xs text-slate-400">กด Ctrl เพื่อเลือกหลายคน</p>
+                </div>
+                <div class="flex flex-col gap-1.5 p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl">
+                    <label class="font-semibold text-slate-700 text-sm">📎 เปลี่ยนไฟล์แนบ</label>
+                    <input type="file" id="adminEditAttachment" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="adminDeleteDoc()" class="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 text-sm">🗑️ ลบเอกสาร</button>
+                    <button onclick="adminSaveEdit()" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-sm">💾 บันทึกการแก้ไข</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. GAS API URL (เปลี่ยนเป็น URL ของ Web App ที่ Deploy แล้ว) ---
+        const GAS_URL = 'YOUR_GAS_WEBAPP_URL_HERE';
+
+        const _GAS_GET_ACTIONS = ['getDashboardData','getTeacherList','getTeacherListFull','getNewRunningNo','getDocumentBase64'];
+
+        async function gasCall(action, params) {
+            params = params || {};
+            try {
+                if (_GAS_GET_ACTIONS.includes(action)) {
+                    const url = new URL(GAS_URL);
+                    url.searchParams.set('action', action);
+                    Object.entries(params).forEach(function(kv) {
+                        url.searchParams.set(kv[0], typeof kv[1] === 'object' ? JSON.stringify(kv[1]) : String(kv[1]));
+                    });
+                    const res = await fetch(url.toString(), { redirect: 'follow' });
+                    return await res.json();
+                } else {
+                    const body = Object.assign({ action: action }, params);
+                    const res = await fetch(GAS_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(body),
+                        redirect: 'follow'
+                    });
+                    return await res.json();
+                }
+            } catch (e) {
+                throw new Error(e.message || String(e));
+            }
+        }
+
+        // --- 2. System Variables ---
+        let currentUser = null;
+        let currentDocument = null; 
+        let newGeneratedDocNo = '';
+        let activeCanvases = [];
+        let canvasEdited = false; // ติดตามว่ามีการแก้ไขบน canvas หรือไม่
+        let currentTool = 'select';
+        let drawColor = '#000000';
+        let globalTeacherList = []; 
+        let allDocs = []; 
+        let overdueMap = {}; // เก็บ docId -> hours ค้าง
+        let currentTab = ''; 
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+        // --- 3. Initialization ---
+        // หน้าแรกจะไม่โหลดอะไรอัตโนมัติ ให้ผู้ใช้เลือกบทบาทก่อน
+        let teacherListLoaded = false;
+        let teacherListLoading = false;
+
+        function ensureTeacherListLoaded(callback) {
+            if (teacherListLoaded) { if (callback) callback(); return; }
+            if (teacherListLoading) { if (callback) setTimeout(() => ensureTeacherListLoaded(callback), 300); return; }
+            teacherListLoading = true;
+            const loginSelect = document.getElementById('loginTeacherSelect');
+            if (loginSelect) loginSelect.innerHTML = '<option value="">-- กำลังโหลดรายชื่อ... --</option>';
+            showLoading(true);
+            document.getElementById('loadingText').innerText = "กำลังดึงรายชื่อบุคลากร...";
+            gasCall('getTeacherList').then(function(teachers) {
+                globalTeacherList = teachers || [];
+                const distSelect = document.getElementById('teacherSelect');
+                if (loginSelect) loginSelect.innerHTML = '<option value="">-- เลือกชื่อของคุณ --</option>';
+                if (distSelect) distSelect.innerHTML = '<option value="all">📢 แจ้งเตือนทุกคน</option>';
+                globalTeacherList.forEach(t => {
+                    if (loginSelect) loginSelect.innerHTML += `<option value="${t.id}">${t.name} (${t.department})</option>`;
+                    if (distSelect) distSelect.innerHTML += `<option value="${t.id}">${t.name} (${t.department})</option>`;
+                });
+                teacherListLoaded = true;
+                teacherListLoading = false;
+                showLoading(false);
+                if (callback) callback();
+            }).catch(function(err){
+                teacherListLoading = false;
+                showLoading(false);
+                showToast("โหลดรายชื่อไม่สำเร็จ: " + (err && err.message ? err.message : err), "error");
+            });
+        }
+
+        // --- 4. Navigation & Auth ---
+        function login(role) {
+            const roleMap = {
+                'admin': { role: 'admin', name: 'ผู้ดูแลระบบ', badge: 'bg-slate-800 text-white' },
+                'clerk': { role: 'clerk', name: 'งานธุรการ', badge: 'bg-indigo-100 text-indigo-700' },
+                'director': { role: 'director', name: 'ผู้อำนวยการ', badge: 'bg-purple-100 text-purple-700' }
+            };
+            if (!roleMap[role]) return;
+            // clerk/director ต้องใช้รายชื่อบุคลากรในการแจกจ่าย จึงโหลดก่อน
+            if (role === 'clerk' || role === 'director') {
+                ensureTeacherListLoaded(() => proceedLogin(roleMap[role]));
+            } else {
+                proceedLogin(roleMap[role]);
+            }
+        }
+
+        function loginAsTeacher() {
+            ensureTeacherListLoaded(() => {
+                const selectEl = document.getElementById('loginTeacherSelect');
+                const selectedId = selectEl.value;
+                if(!selectedId) return showToast("กรุณาเลือกชื่อของคุณก่อนเข้าสู่ระบบ", "error");
+                const teacherData = globalTeacherList.find(t => t.id === selectedId);
+                if(teacherData) proceedLogin({ role: 'teacher', id: teacherData.id, name: teacherData.name, badge: 'bg-emerald-100 text-emerald-700' });
+            });
+        }
+
+        function proceedLogin(userObj) {
+            currentUser = userObj;
+            document.getElementById('userRoleBadge').innerText = currentUser.name;
+            document.getElementById('userRoleBadge').className = `px-3 py-1.5 rounded-full text-xs font-bold ${currentUser.badge}`;
+            document.getElementById('btnNewDoc').style.display = (currentUser.role === 'clerk') ? 'flex' : 'none';
+            
+            // Show filter for clerk/admin/director
+            document.getElementById('filterStatus').style.display = (currentUser.role === 'clerk' || currentUser.role === 'admin' || currentUser.role === 'director') ? 'block' : 'none';
+            
+            switchView('viewDashboard');
+            currentTab = ''; 
+            loadDashboardData();
+        }
+
+        function logout() { currentUser = null; switchView('viewLogin'); }
+        function switchView(id) {
+            ['viewLogin', 'viewDashboard', 'viewEditor'].forEach(v => document.getElementById(v).style.display = 'none');
+            document.getElementById(id).style.display = 'flex';
+        }
+
+        // --- 5. Dashboard Stats ---
+        function renderDashboardStats() {
+            const container = document.getElementById('dashboardStats');
+            const progressSection = document.getElementById('progressSection');
+            container.innerHTML = '';
+            
+            if (currentUser.role === 'teacher') {
+                // Calculate teacher-specific stats
+                const myDocs = allDocs.filter(d => {
+                    if (!d.status.includes('แจกจ่าย') || !d.target) return false;
+                    const targets = d.target.split(',').map(s => s.trim());
+                    return targets.includes('all') || targets.includes(currentUser.id.trim());
+                });
+                
+                let completed = 0, acknowledged = 0, readCount = 0, unread = 0;
+                myDocs.forEach(doc => {
+                    let tracking = {};
+                    try { tracking = JSON.parse(doc.trackingData || '{}'); } catch(e){}
+                    const status = tracking[currentUser.id];
+                    if (status === 'completed') completed++;
+                    else if (status === 'acknowledged') acknowledged++;
+                    else if (status === 'read') readCount++;
+                    else unread++;
+                });
+                
+                const total = myDocs.length;
+                const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+                
+                container.innerHTML = `
+                    <div class="stat-card rounded-2xl border border-emerald-200 p-4 sm:p-5 card-hover animate-fadeInUp stagger-1">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 text-lg">✅</div>
+                            <div>
+                                <div class="text-2xl sm:text-3xl font-bold text-slate-800 animate-countUp">${completed}</div>
+                                <div class="text-sm text-slate-500">เสร็จสิ้น</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card rounded-2xl border border-indigo-200 p-4 sm:p-5 card-hover animate-fadeInUp stagger-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 text-lg">📋</div>
+                            <div>
+                                <div class="text-2xl sm:text-3xl font-bold text-slate-800 animate-countUp">${acknowledged}</div>
+                                <div class="text-sm text-slate-500">รับทราบแล้ว</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card rounded-2xl border border-blue-200 p-4 sm:p-5 card-hover animate-fadeInUp stagger-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 text-lg">👁️</div>
+                            <div>
+                                <div class="text-2xl sm:text-3xl font-bold text-slate-800 animate-countUp">${readCount}</div>
+                                <div class="text-sm text-slate-500">เปิดอ่านแล้ว</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card rounded-2xl border border-amber-200 p-4 sm:p-5 card-hover animate-fadeInUp stagger-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 text-lg">📖</div>
+                            <div>
+                                <div class="text-2xl sm:text-3xl font-bold text-slate-800 animate-countUp">${unread}</div>
+                                <div class="text-sm text-slate-500">ยังไม่เปิดอ่าน</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card rounded-2xl border border-slate-200 p-4 sm:p-5 card-hover animate-fadeInUp">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 text-lg">📊</div>
+                            <div>
+                                <div class="text-2xl sm:text-3xl font-bold text-slate-800 animate-countUp">${percent}%</div>
+                                <div class="text-sm text-slate-500">ความสำเร็จ</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Show progress ring
+                progressSection.style.display = 'block';
+                document.getElementById('statCompleted').textContent = completed;
+                document.getElementById('statPending').textContent = total - completed;
+                document.getElementById('statTotal').textContent = total;
+                document.getElementById('progressPercent').textContent = percent + '%';
+                
+                // Animate ring
+                const circumference = 2 * Math.PI * 52;
+                const offset = circumference - (percent / 100) * circumference;
+                setTimeout(() => {
+                    document.getElementById('progressRing').style.strokeDashoffset = offset;
+                }, 100);
+                
+            } else if (currentUser.role === 'clerk') {
+                const pending = allDocs.filter(d => d.status.includes('รอ ผอ.')).length;
+                const approved = allDocs.filter(d => d.status.includes('อนุมัติ')).length;
+                const distributed = allDocs.filter(d => d.status.includes('แจกจ่าย')).length;
+                const total = allDocs.length;
+                
+                progressSection.style.display = 'none';
+                container.innerHTML = `
+                    <div class="stat-card rounded-2xl border border-orange-200 p-4 sm:p-5 card-hover animate-fadeInUp stagger-1">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 text-lg">⏳</div>
+                            <div>
+                                <div class="text-2xl sm:text-3xl font-bold text-slate-800">${pending}</div>
+                                <div class="text-sm text-slate-500">รอ ผอ. อนุมัติ</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card rounded-2xl border border-purple-200 p-4 sm:p-5 card-hover animate-fadeInUp stagger-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 text-lg">✅</div>
+                            <div>
+                                <div class="text-2xl sm:text-3xl font-bold text-slate-800">${approved}</div>
+                                <div class="text-sm text-slate-500">อนุมัติ (รอแจกจ่าย)</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card rounded-2xl border border-indigo-200 p-4 sm:p-5 card-hover animate-fadeInUp stagger-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 text-lg">📤</div>
+                            <div>
+                                <div class="text-2xl sm:text-3xl font-bold text-slate-800">${distributed}</div>
+                                <div class="text-sm text-slate-500">แจกจ่ายแล้ว</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card rounded-2xl border border-slate-200 p-4 sm:p-5 card-hover animate-fadeInUp stagger-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 text-lg">📁</div>
+                            <div>
+                                <div class="text-2xl sm:text-3xl font-bold text-slate-800">${total}</div>
+                                <div class="text-sm text-slate-500">เอกสารทั้งหมด</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (currentUser.role === 'director') {
+                const pending = allDocs.filter(d => d.status.includes('รอ ผอ.')).length;
+                const distributed = allDocs.filter(d => d.status.includes('แจกจ่าย')).length;
+                const total = allDocs.length;
+                
+                progressSection.style.display = 'none';
+                container.innerHTML = `
+                    <div class="stat-card rounded-2xl border border-orange-200 p-4 sm:p-5 card-hover animate-fadeInUp stagger-1">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 text-lg">📝</div>
+                            <div>
+                                <div class="text-2xl sm:text-3xl font-bold text-slate-800">${pending}</div>
+                                <div class="text-sm text-slate-500">รอพิจารณา</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card rounded-2xl border border-indigo-200 p-4 sm:p-5 card-hover animate-fadeInUp stagger-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 text-lg">📤</div>
+                            <div>
+                                <div class="text-2xl sm:text-3xl font-bold text-slate-800">${distributed}</div>
+                                <div class="text-sm text-slate-500">แจกจ่ายแล้ว</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card rounded-2xl border border-slate-200 p-4 sm:p-5 card-hover animate-fadeInUp stagger-3 col-span-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 text-lg">📁</div>
+                            <div>
+                                <div class="text-2xl sm:text-3xl font-bold text-slate-800">${total}</div>
+                                <div class="text-xs text-slate-500">เอกสารทั้งหมด</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                progressSection.style.display = 'none';
+            }
+        }
+
+        // --- 6. Tabs Setup ---
+        function setupTabs() {
+            const tabsContainer = document.getElementById('dashboardTabs');
+            tabsContainer.innerHTML = '';
+            let tabs = [];
+            
+            if (currentUser.role === 'clerk') {
+                tabs = [
+                    { id: 'clerk-pending', label: '⏳ รอ ผอ. อนุมัติ' },
+                    { id: 'clerk-distribute', label: '📤 รอแจกจ่าย' },
+                    { id: 'clerk-tracking', label: '📊 ติดตาม' },
+                    { id: 'summary', label: '👥 สรุปผลงานครู' },
+                    { id: 'admin-manage', label: '🛠️ จัดการเอกสาร' },
+                    { id: 'teacher-manage', label: '👨‍🏫 จัดการบุคลากร' }
+                ];
+                if (!currentTab || !tabs.find(t => t.id === currentTab)) currentTab = 'clerk-pending';
+            } else if (currentUser.role === 'director') {
+                tabs = [
+                    { id: 'director-pending', label: '📝 รออนุมัติ' },
+                    { id: 'director-tracking', label: '📊 ติดตาม' },
+                    { id: 'summary', label: '👥 สรุปผลงานครู' }
+                ];
+                if (!currentTab || !tabs.find(t => t.id === currentTab)) currentTab = 'director-pending';
+            } else if (currentUser.role === 'admin') {
+                tabs = [
+                    { id: 'admin-all', label: '📁 เอกสารทั้งหมด' },
+                    { id: 'summary', label: '👥 สรุปผลงานครู' },
+                    { id: 'admin-manage', label: '🛠️ จัดการเอกสาร' },
+                    { id: 'teacher-manage', label: '👨‍🏫 จัดการบุคลากร' }
+                ];
+                if (!currentTab || !tabs.find(t => t.id === currentTab)) currentTab = 'admin-all';
+            } else {
+                tabs = [{ id: 'teacher-inbox', label: '📥 เอกสารของฉัน' }];
+                currentTab = 'teacher-inbox';
+            }
+
+            tabs.forEach(tab => {
+                const btn = document.createElement('button');
+                btn.className = `tab-btn ${currentTab === tab.id ? 'active' : ''}`;
+                btn.innerText = tab.label;
+                btn.onclick = () => {
+                    currentTab = tab.id;
+                    setupTabs(); 
+                    if (tab.id === 'summary') {
+                        renderTeacherSummaryInline();
+                    } else if (tab.id === 'teacher-manage') {
+                        renderTeacherManagement();
+                    } else {
+                        renderTable();
+                    }
+                };
+                tabsContainer.appendChild(btn);
+            });
+        }
+
+        // --- 7. Dashboard Data & Rendering ---
+        function loadDashboardData() {
+            showLoading(true);
+            document.getElementById('loadingText').innerText = "กำลังดึงข้อมูลเอกสาร...";
+            gasCall('getDashboardData').then(function(data) {
+                allDocs = data || [];
+                setupTabs();
+                renderDashboardStats();
+                renderTable();
+                checkOverdueUI();
+                showLoading(false);
+            }).catch(function(err) {
+                showToast("ดึงข้อมูลล้มเหลว: " + err, "error");
+                showLoading(false);
+            });
+        }
+
+        function checkOverdueUI() {
+            // คำนวณ overdue จาก client-side (ไม่ต้องเรียก server เพิ่ม)
+            overdueMap = {};
+            const now = new Date();
+            const overdueDocsForBanner = [];
+
+            allDocs.forEach(doc => {
+                if (!doc.status.includes('รอ ผอ.') && !doc.status.includes('อนุมัติแล้ว')) return;
+                if (!doc.timestamp) return;
+
+                const parts = doc.timestamp.match(/(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}):(\d{2}):(\d{2})/);
+                if (!parts) return;
+                let year = parseInt(parts[3]);
+                if (year > 2500) year -= 543;
+                const docDate = new Date(year, parseInt(parts[2]) - 1, parseInt(parts[1]), parseInt(parts[4]), parseInt(parts[5]), parseInt(parts[6]));
+                const diffHours = (now - docDate) / (1000 * 60 * 60);
+
+                if (diffHours >= 24) {
+                    overdueMap[doc.id] = Math.floor(diffHours);
+                    overdueDocsForBanner.push({ docNo: doc.docNo, title: doc.title, hours: Math.floor(diffHours) });
+                }
+            });
+
+            const alertEl = document.getElementById('overdueAlert');
+            if (overdueDocsForBanner.length > 0 && (currentUser.role === 'clerk' || currentUser.role === 'director' || currentUser.role === 'admin')) {
+                alertEl.classList.remove('hidden');
+                alertEl.style.display = 'block';
+                document.getElementById('overdueMessage').textContent = `พบเอกสารค้าง ${overdueDocsForBanner.length} รายการ ที่ยังไม่ได้ดำเนินการเกิน 24 ชม.`;
+                const listEl = document.getElementById('overdueList');
+                listEl.innerHTML = overdueDocsForBanner.slice(0, 5).map(d =>
+                    `<div class="flex items-center gap-2 text-sm text-red-700 bg-red-100/50 rounded-lg px-3 py-2">
+                        <span class="font-bold">[${d.docNo}]</span>
+                        <span class="truncate flex-1">${d.title}</span>
+                        <span class="text-red-500 font-medium whitespace-nowrap">ค้าง ${d.hours} ชม.</span>
+                    </div>`
+                ).join('');
+                if (overdueDocsForBanner.length > 5) {
+                    listEl.innerHTML += `<div class="text-xs text-red-400 pl-3">...และอีก ${overdueDocsForBanner.length - 5} รายการ</div>`;
+                }
+            } else {
+                alertEl.classList.add('hidden');
+            }
+
+            // Re-render table to show overdue highlights
+            renderTable();
+        }
+
+        function renderTable() {
+            // If summary tab is active, render summary instead
+            if (currentTab === 'summary') {
+                renderTeacherSummaryInline();
+                return;
+            }
+            if (currentTab === 'teacher-manage') {
+                renderTeacherManagement();
+                return;
+            }
+
+            const tbody = document.getElementById('documentTableBody');
+            tbody.innerHTML = '';
+            
+            const searchTerm = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+            const filterVal = document.getElementById('filterStatus').value;
+            
+            let visibleDocs = [];
+            
+            if (currentUser.role === 'clerk') {
+                if (currentTab === 'clerk-pending') visibleDocs = allDocs.filter(d => d.status.includes('รอ ผอ.'));
+                else if (currentTab === 'clerk-distribute') visibleDocs = allDocs.filter(d => d.status.includes('อนุมัติแล้ว'));
+                else if (currentTab === 'clerk-tracking') visibleDocs = allDocs.filter(d => d.status.includes('แจกจ่ายแล้ว'));
+                else if (currentTab === 'admin-manage') visibleDocs = [...allDocs];
+            } else if (currentUser.role === 'director') {
+                if (currentTab === 'director-pending') visibleDocs = allDocs.filter(d => d.status.includes('รอ ผอ.'));
+                else if (currentTab === 'director-tracking') visibleDocs = allDocs.filter(d => d.status.includes('แจกจ่ายแล้ว'));
+            } else if (currentUser.role === 'admin') {
+                if (currentTab === 'admin-all') visibleDocs = [...allDocs];
+                else if (currentTab === 'admin-manage') visibleDocs = [...allDocs];
+            } else if (currentUser.role === 'teacher') {
+                visibleDocs = allDocs.filter(d => {
+                    if (!d.status.includes('แจกจ่าย')) return false;
+                    if (!d.target) return false;
+                    const targetsArray = d.target.split(',').map(s => s.trim());
+                    return targetsArray.includes('all') || targetsArray.includes(currentUser.id.trim());
+                });
+            }
+            
+            // Apply search filter
+            if (searchTerm) {
+                visibleDocs = visibleDocs.filter(d => 
+                    (d.docNo && d.docNo.toLowerCase().includes(searchTerm)) ||
+                    (d.title && d.title.toLowerCase().includes(searchTerm)) ||
+                    (d.sender && d.sender.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            // Apply status filter
+            if (filterVal) {
+                visibleDocs = visibleDocs.filter(d => d.status.includes(filterVal));
+            }
+            
+            // Update result count
+            document.getElementById('resultCount').textContent = `แสดง ${visibleDocs.length} รายการ`;
+
+            if(visibleDocs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-12 text-center">
+                    <div class="flex flex-col items-center gap-2 text-slate-400">
+                        <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <span class="font-medium">${searchTerm ? 'ไม่พบเอกสารที่ค้นหา' : 'ไม่มีเอกสารในหมวดหมู่นี้'}</span>
+                    </div>
+                </td></tr>`;
+                return;
+            }
+
+            const isManageTab = (currentTab === 'admin-manage');
+
+            visibleDocs.forEach((doc, idx) => {
+                const tr = document.createElement('tr');
+                const isOverdue = overdueMap[doc.id];
+                tr.className = `table-row border-b ${isOverdue ? 'border-red-200 bg-red-50/40' : 'border-slate-100'} animate-fadeInUp`;
+                tr.style.animationDelay = `${idx * 0.03}s`;
+                
+                let sColor = 'text-slate-600 bg-slate-100';
+                let displayStatus = doc.status;
+                let statusIcon = '📄';
+                if(doc.status.includes('รอ ผอ.')) { sColor = 'text-amber-700 bg-amber-50 border border-amber-200'; statusIcon = '⏳'; }
+                if(doc.status.includes('อนุมัติ')) { sColor = 'text-purple-700 bg-purple-50 border border-purple-200'; statusIcon = '✅'; }
+                if(doc.status.includes('แจกจ่าย')) { sColor = 'text-indigo-700 bg-indigo-50 border border-indigo-200'; statusIcon = '📤'; }
+
+                let tracking = {};
+                try { tracking = JSON.parse(doc.trackingData || '{}'); } catch(e){}
+
+                if(currentUser.role === 'teacher') {
+                    displayStatus = 'ยังไม่เปิดอ่าน';
+                    sColor = 'text-amber-600 bg-amber-50 border border-amber-200'; statusIcon = '📄';
+                    if(tracking[currentUser.id] === 'read') { displayStatus = 'เปิดอ่านแล้ว'; sColor = 'text-blue-700 bg-blue-50 border border-blue-200'; statusIcon = '👁️'; }
+                    if(tracking[currentUser.id] === 'acknowledged') { displayStatus = 'รับทราบแล้ว'; sColor = 'text-emerald-700 bg-emerald-50 border border-emerald-200'; statusIcon = '✅'; }
+                    if(tracking[currentUser.id] === 'completed') { displayStatus = 'เสร็จสิ้น'; sColor = 'text-emerald-700 bg-emerald-50 border border-emerald-200'; statusIcon = '🎉'; }
+                }
+
+                let actionHtml = `<div class="flex justify-end items-center gap-1.5 sm:gap-2 flex-wrap">`;
+                
+                if (isManageTab) {
+                    const docJson = encodeURIComponent(JSON.stringify(doc));
+                    actionHtml += `<button onclick="openAdminEditModal('${docJson}')" class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 text-xs sm:text-sm font-semibold text-indigo-600 transition flex items-center gap-1 whitespace-nowrap">✏️ <span class="hidden sm:inline">แก้ไข</span></button>`;
+                    actionHtml += `<button onclick="adminQuickDelete('${doc.id}')" class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 text-xs sm:text-sm font-semibold text-red-600 transition flex items-center gap-1 whitespace-nowrap">🗑️ <span class="hidden sm:inline">ลบ</span></button>`;
+                } else {
+                    if (doc.status.includes('แจกจ่าย') && currentUser.role !== 'teacher') {
+                        const docParam = encodeURIComponent(JSON.stringify(doc));
+                        actionHtml += `<button onclick="openTrackingModal('${docParam}')" class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 text-xs sm:text-sm font-semibold text-slate-600 transition flex items-center gap-1 whitespace-nowrap">📊 <span class="hidden sm:inline">ติดตาม</span></button>`;
+                    }
+
+                    if (currentUser.role === 'teacher') {
+                        // ปุ่มรับทราบ (ถ้ายังไม่ได้รับทราบ/เสร็จสิ้น)
+                        if (!tracking[currentUser.id] || tracking[currentUser.id] === 'read') {
+                            actionHtml += `<button onclick='quickAcknowledge("${doc.id}")' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 text-xs sm:text-sm font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap">📋 <span class="hidden sm:inline">รับทราบ</span></button>`;
+                        }
+                        // ปุ่มเสร็จสิ้น (ถ้ารับทราบแล้ว)
+                        if (tracking[currentUser.id] === 'acknowledged') {
+                            actionHtml += `<button onclick='quickComplete("${doc.id}")' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 text-xs sm:text-sm font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap">✅ <span class="hidden sm:inline">เสร็จสิ้น</span></button>`;
+                        }
+                        // ปุ่มเปิดเอกสาร → เปิด Drive + track read
+                        if (doc.fileUrl) {
+                            actionHtml += `<button onclick='openAndTrackRead("${doc.id}", "${doc.fileUrl}")' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 text-xs sm:text-sm font-semibold text-blue-700 transition flex items-center gap-1 whitespace-nowrap">📂 <span class="hidden sm:inline">เปิดเอกสาร</span></button>`;
+                        }
+                    } else {
+                        if (currentUser.role === 'teacher' && tracking[currentUser.id] !== 'completed') {
+                            actionHtml += `<button onclick='quickComplete("${doc.id}")' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 text-xs sm:text-sm font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap">✅ <span class="hidden sm:inline">เสร็จสิ้น</span></button>`;
+                        }
+
+                        actionHtml += `<button onclick='openDocument(${JSON.stringify(doc).replace(/'/g, "&#39;")})' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 text-xs sm:text-sm font-semibold text-slate-700 hover:text-indigo-700 transition flex items-center gap-1 whitespace-nowrap">📄 <span class="hidden sm:inline">เปิด</span></button>`;
+                    }
+                }
+                actionHtml += `</div>`;
+                
+                const overdueTag = isOverdue ? `<span class="inline-flex items-center gap-1 text-xs font-bold text-red-600 bg-red-100 border border-red-200 px-2 py-0.5 rounded-full ml-1">🔥 ค้าง ${isOverdue} ชม.</span>` : '';
+                const urgentTag = doc.urgent ? `<span class="inline-flex items-center gap-1 text-xs font-bold text-white bg-red-600 px-2 py-0.5 rounded-full ml-1 animate-pulse">🔴 ด่วนมาก</span>` : '';
+                
+                tr.innerHTML = `
+                    <td class="p-3 sm:p-4"><span class="font-bold text-indigo-600 bg-indigo-50 px-2 sm:px-2.5 py-1 rounded-md text-xs sm:text-sm">${doc.docNo}</span></td>
+                    <td class="p-3 sm:p-4">
+                        <div class="font-medium text-slate-800 text-sm sm:text-base">${urgentTag}${doc.title}${overdueTag}</div>
+                        ${doc.note && (currentUser.role === 'clerk' || currentUser.role === 'director' || currentUser.role === 'admin') ? `<div class="text-xs sm:text-sm text-amber-600 mt-0.5">📝 ${doc.note}</div>` : ''}
+                    </td>
+                    <td class="p-3 sm:p-4 text-slate-500 text-sm hidden sm:table-cell">${doc.sender}</td>
+                    <td class="p-3 sm:p-4"><span class="status-badge ${sColor}">${statusIcon} ${displayStatus}</span></td>
+                    <td class="p-3 sm:p-4">${actionHtml}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openTrackingModal(docStr) {
+            const doc = JSON.parse(decodeURIComponent(docStr));
+            document.getElementById('modalTracking').style.display = 'flex';
+            const tbody = document.getElementById('trackingTableBody');
+            const summaryEl = document.getElementById('trackingSummary');
+            tbody.innerHTML = '';
+            
+            let targets = [];
+            if(doc.target) targets = doc.target.split(',').map(s=>s.trim());
+            
+            let tracking = {};
+            try { tracking = JSON.parse(doc.trackingData || '{}'); } catch(e){}
+
+            let listToShow = targets.includes('all') ? globalTeacherList : globalTeacherList.filter(t => targets.includes(t.id));
+
+            // Summary stats
+            let ackCount = 0, doneCount = 0, readCount2 = 0, unreadCount = 0;
+            listToShow.forEach(t => {
+                if(tracking[t.id] === 'completed') doneCount++;
+                else if(tracking[t.id] === 'acknowledged') ackCount++;
+                else if(tracking[t.id] === 'read') readCount2++;
+                else unreadCount++;
+            });
+            
+            const totalPeople = listToShow.length;
+            const completionPercent = totalPeople > 0 ? Math.round((doneCount / totalPeople) * 100) : 0;
+            
+            summaryEl.innerHTML = `
+                <span class="text-emerald-600">✅ เสร็จ ${doneCount}</span>
+                <span class="text-indigo-600">📋 รับทราบ ${ackCount}</span>
+                <span class="text-blue-600">👁️ เปิดอ่าน ${readCount2}</span>
+                <span class="text-amber-600">📄 ยังไม่อ่าน ${unreadCount}</span>
+                <span class="ml-auto font-bold text-slate-700">${completionPercent}% สำเร็จ</span>
+            `;
+
+            if(listToShow.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="p-6 text-center text-slate-500">ไม่มีรายชื่อผู้รับ</td></tr>';
+                return;
+            }
+
+            listToShow.forEach(t => {
+                let status = 'ยังไม่เปิดอ่าน';
+                let color = 'text-amber-600 bg-amber-50 border border-amber-200';
+                let icon = '📄';
+                if(tracking[t.id] === 'read') { status = 'เปิดอ่านแล้ว'; color = 'text-blue-600 bg-blue-50 border border-blue-200'; icon = '👁️'; }
+                if(tracking[t.id] === 'acknowledged') { status = 'รับทราบแล้ว'; color = 'text-indigo-600 bg-indigo-50 border border-indigo-200'; icon = '✅'; }
+                if(tracking[t.id] === 'completed') { status = 'เสร็จสิ้น'; color = 'text-emerald-600 bg-emerald-50 border border-emerald-200'; icon = '🎉'; }
+
+                tbody.innerHTML += `
+                    <tr class="table-row border-b border-slate-100">
+                        <td class="p-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-500">${t.name.charAt(0)}</div>
+                                <div>
+                                    <div class="font-medium text-slate-700">${t.name}</div>
+                                    <div class="text-xs text-slate-400">${t.department}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-3"><span class="status-badge ${color}">${icon} ${status}</span></td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- 8. Editor Logic ---
+        document.getElementById('docUpload').addEventListener('change', async e => {
+            const file = e.target.files[0];
+            if(!file) return;
+            showLoading(true);
+            document.getElementById('loadingText').innerText = "กำลังจองเลขรับหนังสือ...";
+            gasCall('getNewRunningNo').then(async function(newDocNo) {
+                currentDocument = null;
+                newGeneratedDocNo = newDocNo;
+                canvasEdited = true;
+                setupEditorUI('new');
+                switchView('viewEditor');
+                await renderFileToEditor(file, newDocNo, true);
+                showLoading(false);
+            });
+            e.target.value = ''; 
+        });
+
+        async function openDocument(doc) {
+            if(!doc.fileUrl) return showToast("ไม่พบไฟล์เอกสารแนบ", "error");
+            currentDocument = doc;
+            canvasEdited = false; // เปิดเอกสารเดิม → ยังไม่มีการแก้ไข
+            setupEditorUI('existing');
+            switchView('viewEditor');
+            
+            showLoading(true);
+            document.getElementById('loadingText').innerText = "กำลังดึงข้อมูล PDF จากเซิร์ฟเวอร์...";
+
+            // ครูไม่ต้องเปิด canvas แล้ว → ไม่ track read ตรงนี้
+
+            gasCall('getDocumentBase64', { docId: doc.id }).then(async function(base64) {
+                if(base64) {
+                    await renderFileToEditor(base64, null, false);
+                    renderAttachmentPanel(doc);
+                    showLoading(false);
+                } else {
+                    renderFallbackEditor(doc);
+                    showLoading(false);
+                }
+            }).catch(function() {
+                renderFallbackEditor(doc);
+                showLoading(false);
+            });
+        }
+
+        function renderAttachmentPanel(doc) {
+            if(doc.attachmentUrl) {
+                const container = document.getElementById('scalableContent');
+                const panel = document.createElement('div');
+                panel.className = "w-full max-w-2xl bg-emerald-50 border border-emerald-200 rounded-xl p-4 mt-2 text-center";
+                panel.innerHTML = `<span class="font-bold text-emerald-800">📎 เอกสารแนบเพิ่มเติม:</span> <a href="${doc.attachmentUrl}" target="_blank" class="text-indigo-600 underline ml-2 font-medium">ดาวน์โหลดไฟล์แนบ</a>`;
+                container.insertBefore(panel, container.firstChild);
+            }
+        }
+
+        function renderFallbackEditor(doc) {
+            const container = document.getElementById('scalableContent');
+            let attHtml = '';
+            if(doc.attachmentUrl) attHtml = `<div class="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-left"><span class="font-bold text-emerald-800">📎 ไฟล์แนบ:</span> <a href="${doc.attachmentUrl}" target="_blank" class="text-indigo-600 underline ml-2 font-medium">โหลดไฟล์แนบ</a></div>`;
+            container.innerHTML = `<div class="bg-white p-10 text-center shadow-lg rounded-2xl max-w-2xl mx-auto mt-10 w-full border border-slate-200"><h3 class="text-2xl font-bold text-slate-800 mb-2">${doc.title}</h3><p class="text-slate-500 mb-6">เลขรับ: ${doc.docNo}</p><div class="flex flex-col sm:flex-row gap-3 justify-center"><a href="${doc.fileUrl}" target="_blank" class="inline-block bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-6 py-3 rounded-xl font-bold hover:from-indigo-700 hover:to-indigo-800 transition shadow-sm">📥 ดูเอกสารต้นฉบับ (PDF)</a><a href="${doc.fileUrl}" target="_blank" class="inline-block bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:from-blue-600 hover:to-blue-700 transition shadow-sm">📂 เปิดใน Google Drive</a></div>${attHtml}<div class="mt-8 text-slate-400 text-sm border-t border-slate-100 pt-4">*แสดงในรูปแบบลิงก์เนื่องจากไม่สามารถดึงไฟล์จากเซิร์ฟเวอร์ได้</div></div>`;
+            activeCanvases = [];
+        }
+
+        function setupEditorUI(state) {
+            document.getElementById('actionBtnClerk').style.display = 'none';
+            document.getElementById('actionBtnDirector').style.display = 'none';
+            document.getElementById('actionBtnDistribute').style.display = 'none';
+            document.getElementById('actionBtnAcknowledge').style.display = 'none';
+            document.getElementById('actionBtnComplete').style.display = 'none';
+            document.getElementById('actionBtnViewDrive').style.display = 'none';
+            document.getElementById('btnEditDocNo').style.display = 'none';
+            
+            document.getElementById('docInfoBadge').style.display = 'flex';
+            document.getElementById('headerDocNo').innerText = currentDocument ? currentDocument.docNo : newGeneratedDocNo;
+
+            if(currentUser.role === 'clerk') {
+                document.getElementById('btnEditDocNo').style.display = 'inline-flex';
+                if(state === 'new') document.getElementById('actionBtnClerk').style.display = 'flex';
+                if(currentDocument && currentDocument.status.includes('อนุมัติ')) document.getElementById('actionBtnDistribute').style.display = 'flex';
+            } else if (currentUser.role === 'director' && currentDocument && currentDocument.status.includes('รอ ผอ.')) {
+                document.getElementById('actionBtnDirector').style.display = 'flex';
+            } else if (currentUser.role === 'teacher' && currentDocument) {
+                // แสดงปุ่มดูใน Drive สำหรับครู (ถ้ามี fileUrl)
+                if (currentDocument.fileUrl) {
+                    document.getElementById('actionBtnViewDrive').style.display = 'flex';
+                }
+                let tracking = {};
+                try { tracking = JSON.parse(currentDocument.trackingData || '{}'); } catch(e){}
+                if(tracking[currentUser.id] === 'acknowledged') document.getElementById('actionBtnComplete').style.display = 'flex';
+                else if (tracking[currentUser.id] !== 'completed') document.getElementById('actionBtnAcknowledge').style.display = 'flex';
+            }
+        }
+
+        function editDocNoInline() {
+            const currentDocNo = document.getElementById('headerDocNo').innerText;
+            const newDocNo = prompt('แก้ไขเลขรับหนังสือ:', currentDocNo);
+            if (!newDocNo || newDocNo.trim() === '' || newDocNo.trim() === currentDocNo) return;
+            
+            const trimmed = newDocNo.trim();
+            document.getElementById('headerDocNo').innerText = trimmed;
+            
+            // อัปเดตข้อความ "เลขรับ:" บน canvas ด้วย
+            updateDocNoOnCanvas(trimmed);
+            
+            if (currentDocument) {
+                showLoading(true);
+                document.getElementById('loadingText').innerText = 'กำลังอัปเดตเลขรับ...';
+                gasCall('updateDocumentField', { docId: currentDocument.id, fieldName: 'docNo', newValue: trimmed }).then(function(res) {
+                    showLoading(false);
+                    if (res.success) {
+                        currentDocument.docNo = trimmed;
+                        showToast('✅ แก้ไขเลขรับเรียบร้อย');
+                    } else showToast('❌ ' + res.message, 'error');
+                }).catch(function(err) {
+                    showLoading(false);
+                    showToast('❌ ' + err, 'error');
+                });
+            } else {
+                newGeneratedDocNo = trimmed;
+            }
+        }
+
+        // ค้นหาและอัปเดต text "เลขรับ:" บน canvas ทุกหน้า
+        function updateDocNoOnCanvas(newDocNo) {
+            if (!activeCanvases.length) return;
+            const canvas = activeCanvases[0].canvas;
+            canvas.getObjects().forEach(obj => {
+                // กรณี Group (rect + text) ที่สร้างจาก addAutoRunningText
+                if (obj.type === 'group' && obj._objects) {
+                    obj._objects.forEach(child => {
+                        if (child.type === 'text' && child.text && child.text.startsWith('เลขรับ:')) {
+                            child.set('text', `เลขรับ: ${newDocNo}`);
+                        }
+                    });
+                    obj.dirty = true;
+                }
+                // กรณี IText/Text ที่อาจแก้ไขเอง
+                if ((obj.type === 'text' || obj.type === 'i-text') && obj.text && obj.text.startsWith('เลขรับ:')) {
+                    obj.set('text', `เลขรับ: ${newDocNo}`);
+                }
+            });
+            canvas.renderAll();
+            canvasEdited = true; // บังคับสร้าง PDF ใหม่เมื่อส่ง
+        }
+
+        // เปิดเอกสารใน Google Drive โดยตรง
+        function openInDrive() {
+            if (currentDocument && currentDocument.fileUrl) {
+                window.open(currentDocument.fileUrl, '_blank');
+            } else {
+                showToast('ไม่พบลิงก์เอกสาร', 'error');
+            }
+        }
+
+        async function renderFileToEditor(fileOrBase64, autoNumber, isFile = true) {
+            const container = document.getElementById('scalableContent');
+            container.innerHTML = '';
+            activeCanvases = [];
+            let pdfDoc = null;
+            let isImage = false;
+            let imgSrc = null;
+
+            try {
+                if(isFile) {
+                    if(fileOrBase64.type === 'application/pdf') {
+                        const ab = await fileOrBase64.arrayBuffer();
+                        pdfDoc = await pdfjsLib.getDocument(ab).promise;
+                    } else {
+                        isImage = true;
+                        imgSrc = await new Promise(r => { const rd = new FileReader(); rd.onload = e => r(e.target.result); rd.readAsDataURL(fileOrBase64); });
+                    }
+                } else {
+                    const binaryString = window.atob(fileOrBase64);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+                    pdfDoc = await pdfjsLib.getDocument(bytes.buffer).promise;
+                }
+
+                if(pdfDoc) {
+                    const PDF_RENDER_SCALE = 2.0;
+                    for(let num = 1; num <= pdfDoc.numPages; num++) {
+                        const page = await pdfDoc.getPage(num);
+                        const unscaledViewport = page.getViewport({scale: 1.0});
+                        const displayWidth = 800; 
+                        const displayScale = displayWidth / unscaledViewport.width;
+                        const hiResScale = displayScale * PDF_RENDER_SCALE;
+                        const displayViewport = page.getViewport({scale: displayScale});
+                        const hiResViewport = page.getViewport({scale: hiResScale});
+                        
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'bg-white shadow-lg relative border border-slate-200 mx-auto rounded-lg overflow-hidden';
+                        const canvasEl = document.createElement('canvas');
+                        canvasEl.id = `canvas_page_${num}`;
+                        wrapper.appendChild(canvasEl);
+                        container.appendChild(wrapper);
+
+                        const fCanvas = new fabric.Canvas(canvasEl.id);
+                        activeCanvases.push({ canvas: fCanvas, hiResScale: PDF_RENDER_SCALE });
+                        fCanvas.setWidth(displayViewport.width);
+                        fCanvas.setHeight(displayViewport.height);
+
+                        const tempC = document.createElement('canvas');
+                        tempC.width = hiResViewport.width; tempC.height = hiResViewport.height;
+                        await page.render({canvasContext: tempC.getContext('2d'), viewport: hiResViewport}).promise;
+                        
+                        await new Promise(r => {
+                            fabric.Image.fromURL(tempC.toDataURL('image/png'), img => {
+                                fCanvas.setBackgroundImage(img, fCanvas.renderAll.bind(fCanvas), {
+                                    scaleX: fCanvas.width / img.width, scaleY: fCanvas.height / img.height
+                                });
+                                if(autoNumber && num === 1) addAutoRunningText(fCanvas, autoNumber); 
+                                r();
+                            });
+                        });
+                    }
+                } else if (isImage) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'bg-white shadow-lg relative border border-slate-200 mx-auto rounded-lg overflow-hidden';
+                    const canvasEl = document.createElement('canvas');
+                    canvasEl.id = `canvas_img_1`;
+                    wrapper.appendChild(canvasEl);
+                    container.appendChild(wrapper);
+
+                    const fCanvas = new fabric.Canvas(canvasEl.id);
+                    activeCanvases.push({ canvas: fCanvas, hiResScale: 1 });
+
+                    const imgObj = new Image();
+                    imgObj.src = imgSrc;
+                    await new Promise(r => {
+                        imgObj.onload = function() {
+                            const targetWidth = 800;
+                            const scale = imgObj.width > targetWidth ? targetWidth / imgObj.width : 1;
+                            fCanvas.setWidth(imgObj.width * scale); 
+                            fCanvas.setHeight(imgObj.height * scale);
+                            fabric.Image.fromURL(imgObj.src, img => {
+                                fCanvas.setBackgroundImage(img, fCanvas.renderAll.bind(fCanvas), {
+                                    scaleX: fCanvas.width / img.width, scaleY: fCanvas.height / img.height
+                                });
+                                if(autoNumber) addAutoRunningText(fCanvas, autoNumber);
+                                r();
+                            });
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+                if(!isFile) renderFallbackEditor(currentDocument); 
+            }
+            setTool('select');
+        }
+
+        function addAutoRunningText(canvas, text) {
+            const rect = new fabric.Rect({ fill: 'white', width: 170, height: 40, opacity: 0.95, rx: 8, ry: 8 });
+            const txt = new fabric.Text(`เลขรับ: ${text}`, { fontFamily: 'Sarabun', fontSize: 22, fill: '#dc2626', left: 12, top: 8 });
+            const group = new fabric.Group([rect, txt], { left: canvas.width - 190, top: 20, borderColor: '#6366f1', cornerColor: '#6366f1', cornerSize: 8, transparentCorners: false });
+            canvas.add(group); canvas.renderAll();
+        }
+
+        function closeEditor() { switchView('viewDashboard'); }
+
+        // --- 9. Tools & Canvas ---
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.active-tool').forEach(el => el.classList.remove('active-tool'));
+            document.getElementById(`tool-${tool}`).classList.add('active-tool');
+            activeCanvases.forEach(item => {
+                const c = item.canvas;
+                c.isDrawingMode = (tool === 'pen');
+                if(c.isDrawingMode) {
+                    c.freeDrawingBrush = new fabric.PencilBrush(c);
+                    c.freeDrawingBrush.color = drawColor;
+                    c.freeDrawingBrush.width = 3;
+                }
+                c.off('mouse:down');
+                if(tool === 'text') {
+                    c.on('mouse:down', function(opt) {
+                        const ptr = c.getPointer(opt.e);
+                        const text = new fabric.IText('พิมพ์ข้อความ...', { left: ptr.x, top: ptr.y, fontFamily: 'Sarabun', fill: drawColor, fontSize: 24 });
+                        c.add(text); c.setActiveObject(text); text.enterEditing();
+                        canvasEdited = true;
+                        setTool('select');
+                    });
+                }
+                // ติดตามการวาด
+                c.on('path:created', function() { canvasEdited = true; });
+            });
+        }
+        function updateDrawSettings() { drawColor = document.getElementById('colorPicker').value; setTool(currentTool); }
+        document.getElementById('stampUpload').addEventListener('change', e => {
+            const file = e.target.files[0];
+            if(!file || !activeCanvases.length) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                addStampToCanvas(ev.target.result);
+            };
+            reader.readAsDataURL(file);
+            setTool('select');
+            e.target.value = ''; 
+        });
+
+        // --- Stamp Gallery ---
+        function getSavedStamps() {
+            try { return JSON.parse(localStorage.getItem('savedStamps') || '[]'); } catch(e) { return []; }
+        }
+        function saveSavedStamps(stamps) {
+            localStorage.setItem('savedStamps', JSON.stringify(stamps));
+        }
+        function openStampGallery() {
+            document.getElementById('modalStampGallery').style.display = 'flex';
+            renderStampGallery();
+        }
+        function renderStampGallery() {
+            const stamps = getSavedStamps();
+            const grid = document.getElementById('stampGalleryGrid');
+            const empty = document.getElementById('stampGalleryEmpty');
+            grid.innerHTML = '';
+            if(stamps.length === 0) { empty.classList.remove('hidden'); return; }
+            empty.classList.add('hidden');
+            stamps.forEach((stamp, idx) => {
+                const div = document.createElement('div');
+                div.className = 'relative group border-2 border-slate-200 rounded-xl overflow-hidden cursor-pointer hover:border-indigo-400 transition bg-white aspect-square flex items-center justify-center p-2';
+                div.innerHTML = `
+                    <img src="${stamp.data}" class="max-w-full max-h-full object-contain" alt="${stamp.name || 'ตรา'}">
+                    <div class="absolute inset-0 bg-indigo-600/0 group-hover:bg-indigo-600/10 transition flex items-center justify-center">
+                        <span class="opacity-0 group-hover:opacity-100 text-xs font-bold text-indigo-700 bg-white/90 px-2 py-1 rounded-lg shadow">ใช้รูปนี้</span>
+                    </div>
+                    <button onclick="event.stopPropagation(); deleteStamp(${idx})" class="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold opacity-0 group-hover:opacity-100 transition hover:bg-red-600 flex items-center justify-center">&times;</button>
+                `;
+                div.onclick = () => { useStampFromGallery(idx); };
+                grid.appendChild(div);
+            });
+        }
+        function handleStampGalleryUpload(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                const stamps = getSavedStamps();
+                stamps.push({ name: file.name, data: ev.target.result });
+                saveSavedStamps(stamps);
+                renderStampGallery();
+                showToast('✅ บันทึกรูปเรียบร้อย ใช้ได้ในครั้งต่อไป');
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        }
+        function useStampFromGallery(idx) {
+            const stamps = getSavedStamps();
+            if(!stamps[idx] || !activeCanvases.length) return;
+            addStampToCanvas(stamps[idx].data);
+            closeModal('modalStampGallery');
+        }
+        function deleteStamp(idx) {
+            if(!confirm('ลบรูปนี้จากคลัง?')) return;
+            const stamps = getSavedStamps();
+            stamps.splice(idx, 1);
+            saveSavedStamps(stamps);
+            renderStampGallery();
+            showToast('ลบรูปเรียบร้อย');
+        }
+        function addStampToCanvas(dataUrl) {
+            if(!activeCanvases.length) return;
+            fabric.Image.fromURL(dataUrl, img => {
+                img.scale(0.5);
+                const c = activeCanvases[0].canvas; 
+                img.set({ left: c.width/2, top: c.height/2, originX: 'center', originY: 'center' });
+                c.add(img); c.setActiveObject(img);
+                canvasEdited = true;
+                document.getElementById('scalableContent').scrollTo({ top: 0, behavior: 'smooth' });
+            });
+            setTool('select');
+        }
+
+        // --- 10. Submission Flow ---
+        function acknowledgeDocument() {
+            showLoading(true);
+            document.getElementById('loadingText').innerText = "กำลังบันทึกการรับทราบ...";
+            gasCall('updateTracking', { docId: currentDocument.id, userId: currentUser.id, readStatus: 'acknowledged' }).then(function() {
+                showToast("✅ บันทึกการรับทราบเรียบร้อยแล้ว");
+                closeEditor();
+                setTimeout(() => loadDashboardData(), 500);
+            }).catch(function(err) {
+                showLoading(false);
+                showToast("❌ ผิดพลาด: " + err, "error");
+            });
+        }
+
+        function completeDocument() {
+            showLoading(true);
+            document.getElementById('loadingText').innerText = "กำลังบันทึกสถานะเสร็จสิ้น...";
+            gasCall('updateTracking', { docId: currentDocument.id, userId: currentUser.id, readStatus: 'completed' }).then(function() {
+                showToast("✅ บันทึกสถานะเสร็จสิ้นเรียบร้อย");
+                closeEditor();
+                setTimeout(() => loadDashboardData(), 500);
+            }).catch(function(err) {
+                showLoading(false);
+                showToast("❌ ผิดพลาด: " + err, "error");
+            });
+        }
+
+        function openAndTrackRead(docId, fileUrl) {
+            // เปิด Drive ก่อน
+            window.open(fileUrl, '_blank');
+            // บันทึกสถานะ read (เฉพาะกรณียังไม่มีสถานะที่สูงกว่า)
+            gasCall('updateTracking', { docId: docId, userId: currentUser.id, readStatus: 'read' }).then(function() {
+                loadDashboardData();
+            }).catch(function(err) {
+                console.log('Track read error:', err);
+            });
+        }
+
+        function quickAcknowledge(docId) {
+            showLoading(true);
+            document.getElementById('loadingText').innerText = "กำลังบันทึกการรับทราบ...";
+            gasCall('updateTracking', { docId: docId, userId: currentUser.id, readStatus: 'acknowledged' }).then(function() {
+                showToast("✅ รับทราบเรียบร้อยแล้ว");
+                showLoading(false);
+                loadDashboardData();
+            }).catch(function(err) {
+                showLoading(false);
+                showToast("❌ ผิดพลาด: " + err, "error");
+            });
+        }
+
+        function quickComplete(docId) {
+            showLoading(true);
+            document.getElementById('loadingText').innerText = "กำลังอัปเดตสถานะ...";
+            gasCall('updateTracking', { docId: docId, userId: currentUser.id, readStatus: 'completed' }).then(function() {
+                showToast("✅ อัปเดตสถานะเสร็จสิ้นแล้ว");
+                showLoading(false);
+                loadDashboardData();
+            }).catch(function(err) {
+                showLoading(false);
+                showToast("❌ ผิดพลาด: " + err, "error");
+            });
+        }
+
+        let currentSubmitAction = null;
+        function openSendModal(action) {
+            currentSubmitAction = action;
+            document.getElementById('modalSend').style.display = 'flex';
+            const titleEl = document.getElementById('modalSendTitle');
+            const teacherGroup = document.getElementById('teacherSelectGroup');
+            const attachGroup = document.getElementById('attachmentGroup');
+            const urgentGroup = document.getElementById('urgentGroup');
+            const titleInput = document.getElementById('modalDocTitle');
+            
+            teacherGroup.style.display = 'none';
+            attachGroup.style.display = 'none';
+            urgentGroup.style.display = 'none';
+            document.getElementById('urgentCheckbox').checked = false;
+            titleInput.value = currentDocument ? currentDocument.title : '';
+            
+            // แสดงหมายเหตุเดิม (ถ้ามี) ให้ทุก role เห็น
+            const noteEl = document.getElementById('sendNote');
+            noteEl.value = '';
+            if (currentDocument && currentDocument.note) {
+                noteEl.value = currentDocument.note;
+            }
+
+            if(action === 'clerk') {
+                titleEl.innerText = "ส่งให้ผู้อำนวยการพิจารณา";
+                attachGroup.style.display = 'flex';
+            } else if (action === 'director') {
+                titleEl.innerText = "อนุมัติและส่งกลับธุรการ";
+            } else if (action === 'distribute') {
+                titleEl.innerText = "แจกจ่ายเอกสารให้บุคลากร";
+                teacherGroup.style.display = 'flex';
+                attachGroup.style.display = 'flex';
+                urgentGroup.style.display = 'flex';
+            }
+        }
+
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        async function processSubmit() {
+            const titleInput = document.getElementById('modalDocTitle');
+            if(!titleInput.value.trim()) {
+                showToast("กรุณาระบุชื่อเรื่องของเอกสาร", "error");
+                titleInput.focus();
+                return;
+            }
+
+            closeModal('modalSend');
+            showLoading(true);
+
+            try {
+                let base64Pdf = null;
+                
+                // สร้าง PDF เฉพาะเมื่อ:
+                // 1. เป็นเอกสารใหม่ (clerk ลงรับ) → ต้องสร้างเสมอ
+                // 2. มีการแก้ไขบน canvas (วาด/เพิ่มข้อความ/ตรา) → ต้องสร้างใหม่
+                // ถ้าไม่มีการแก้ไข → ใช้ไฟล์ PDF เดิมที่อยู่บน Drive (เร็วมาก)
+                const isNewDoc = (currentSubmitAction === 'clerk' && !currentDocument);
+                const needPdf = isNewDoc || canvasEdited;
+                
+                if (needPdf && activeCanvases.length > 0) {
+                    const { jsPDF } = window.jspdf;
+                    let pdf = null;
+                    const totalPages = activeCanvases.length;
+                    
+                    for(let i=0; i<totalPages; i++) {
+                        document.getElementById('loadingText').innerText = `กำลังสร้าง PDF หน้า ${i+1}/${totalPages}...`;
+                        
+                        // yield ให้ browser อัปเดต UI ไม่ค้าง
+                        await new Promise(r => setTimeout(r, 50));
+                        
+                        const canvasItem = activeCanvases[i];
+                        const canvas = canvasItem.canvas;
+                        canvas.discardActiveObject(); canvas.renderAll();
+                        
+                        // PNG สำหรับคุณภาพตรา/ลายเซ็น, multiplier 2.0
+                        const exportMultiplier = 2.0;
+                        const imgData = canvas.toDataURL({ format: 'png', multiplier: exportMultiplier });
+                        const exportW = canvas.width * exportMultiplier;
+                        const exportH = canvas.height * exportMultiplier;
+                        const orientation = canvas.width > canvas.height ? 'l' : 'p';
+                        if(i === 0) pdf = new jsPDF(orientation, 'pt', [exportW, exportH]);
+                        else pdf.addPage([exportW, exportH], orientation);
+                        pdf.addImage(imgData, 'PNG', 0, 0, exportW, exportH, undefined, 'FAST');
+                    }
+                    
+                    document.getElementById('loadingText').innerText = "กำลังเตรียมส่ง...";
+                    await new Promise(r => setTimeout(r, 30));
+                    base64Pdf = pdf.output('datauristring').split(',')[1];
+                } else {
+                    document.getElementById('loadingText').innerText = "กำลังประมวลผล...";
+                }
+
+                let attBase64 = null, attName = null, attMime = null;
+                const attachFileEl = document.getElementById('attachmentUpload');
+                if(attachFileEl && attachFileEl.files.length > 0) {
+                    const file = attachFileEl.files[0];
+                    attName = file.name; attMime = file.type;
+                    attBase64 = await new Promise((resolve) => {
+                        const r = new FileReader();
+                        r.onload = e => resolve(e.target.result.split(',')[1]);
+                        r.readAsDataURL(file);
+                    });
+                }
+
+                let targets = [];
+                if(currentSubmitAction === 'distribute') {
+                    const selectEl = document.getElementById('teacherSelect');
+                    for(let opt of selectEl.selectedOptions) targets.push(opt.value);
+                }
+
+                const docTitle = titleInput.value.trim();
+                const docNo = currentDocument ? currentDocument.docNo : newGeneratedDocNo;
+
+                document.getElementById('loadingText').innerText = "กำลังบันทึกและส่งเอกสาร...";
+
+                const payload = {
+                    action: currentSubmitAction,
+                    docId: currentDocument ? currentDocument.id : null,
+                    docNo: docNo, title: docTitle, sender: currentUser.name,
+                    note: document.getElementById('sendNote').value,
+                    fileData: base64Pdf, fileName: `EDOC_${docNo.replace('/','_')}.pdf`,
+                    existingFileUrl: currentDocument ? currentDocument.fileUrl : null,
+                    targetTeachers: targets,
+                    attachmentData: attBase64, attachmentName: attName, attachmentMimeType: attMime,
+                    existingAttachmentUrl: currentDocument ? currentDocument.attachmentUrl : null,
+                    trackingData: currentDocument ? currentDocument.trackingData : null,
+                    urgent: (currentSubmitAction === 'distribute' && document.getElementById('urgentCheckbox').checked) ? 'ด่วนมาก' : ''
+                };
+
+                gasCall('processDocument', { payload: payload }).then(function(response) {
+                    showLoading(false);
+                    if (response.success) {
+                        showToast("✅ บันทึกและส่งเอกสารสำเร็จ!");
+                        closeEditor();
+                        document.getElementById('sendNote').value = '';
+                        if(attachFileEl) attachFileEl.value = '';
+                        setTimeout(() => loadDashboardData(), 300);
+                    } else showToast("❌ ข้อผิดพลาด: " + response.message, "error");
+                }).catch(function(error) {
+                    showLoading(false); showToast("❌ การเชื่อมต่อล้มเหลว", "error");
+                });
+
+            } catch (error) {
+                showLoading(false);
+                showToast("❌ เกิดข้อผิดพลาดในระบบ: " + error, "error");
+            }
+        }
+
+        // --- 11. Utilities ---
+        function showLoading(show) { document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none'; }
+        
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            const styles = type === 'success' 
+                ? 'bg-emerald-600 shadow-emerald-500/20' 
+                : 'bg-red-500 shadow-red-500/20';
+            toast.className = `${styles} text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl shadow-lg font-semibold transform transition-all duration-300 translate-x-full opacity-0 pointer-events-auto flex items-center gap-2 text-xs sm:text-sm max-w-full`;
+            toast.innerHTML = `<span>${message}</span>`;
+            document.getElementById('toastContainer').appendChild(toast);
+            requestAnimationFrame(() => toast.classList.remove('translate-x-full', 'opacity-0'));
+            setTimeout(() => { 
+                toast.classList.add('translate-x-full', 'opacity-0'); 
+                setTimeout(() => toast.remove(), 300); 
+            }, 3500);
+        }
+        // --- 12. Teacher Summary Inline ---
+        function renderTeacherSummaryInline() {
+            const tbody = document.getElementById('documentTableBody');
+            tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400"><div class="animate-pulse">กำลังโหลดข้อมูลสรุปผลงานครู...</div></td></tr>`;
+            document.getElementById('resultCount').textContent = 'กำลังโหลด...';
+
+            // Calculate from client-side data
+            const distributedDocs = allDocs.filter(d => d.status.includes('แจกจ่าย'));
+            const summaryData = globalTeacherList.map(t => {
+                let total = 0, completed = 0, acknowledged = 0, pending = 0;
+                distributedDocs.forEach(doc => {
+                    const targets = (doc.target || '').split(',').map(s => s.trim());
+                    if (!targets.includes('all') && !targets.includes(t.id)) return;
+                    total++;
+                    let tracking = {};
+                    try { tracking = JSON.parse(doc.trackingData || '{}'); } catch(e) {}
+                    const st = tracking[t.id];
+                    if (st === 'completed') completed++;
+                    else if (st === 'acknowledged') acknowledged++;
+                    else pending++;
+                });
+                return { ...t, total, completed, acknowledged, unread: pending, percent: total > 0 ? Math.round((completed / total) * 100) : 0 };
+            });
+
+            renderTeacherSummaryTable(summaryData);
+        }
+
+        function renderTeacherSummaryTable(data) {
+            const tbody = document.getElementById('documentTableBody');
+            tbody.innerHTML = '';
+            document.getElementById('resultCount').textContent = `แสดง ${data.length} คน`;
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-12 text-center text-slate-400">ไม่พบข้อมูลบุคลากร</td></tr>`;
+                return;
+            }
+
+            // Header row
+            const headerTr = document.createElement('tr');
+            headerTr.className = 'bg-slate-50 border-b border-slate-200';
+            headerTr.innerHTML = `
+                <th class="p-3 text-left text-xs sm:text-sm font-bold text-slate-500 uppercase">ชื่อ-สกุล</th>
+                <th class="p-3 text-center text-xs sm:text-sm font-bold text-slate-500 uppercase">ได้รับ</th>
+                <th class="p-3 text-center text-xs sm:text-sm font-bold text-slate-500 uppercase hidden sm:table-cell">เสร็จ</th>
+                <th class="p-3 text-center text-xs sm:text-sm font-bold text-slate-500 uppercase hidden sm:table-cell">ยังไม่อ่าน</th>
+                <th class="p-3 text-center text-xs sm:text-sm font-bold text-slate-500 uppercase">ความสำเร็จ</th>
+            `;
+            tbody.appendChild(headerTr);
+
+            data.forEach((t, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = 'table-row border-b border-slate-100 animate-fadeInUp';
+                tr.style.animationDelay = `${idx * 0.03}s`;
+                
+                let barColor = 'bg-red-400';
+                if (t.percent >= 75) barColor = 'bg-emerald-500';
+                else if (t.percent >= 50) barColor = 'bg-indigo-500';
+                else if (t.percent >= 25) barColor = 'bg-amber-400';
+
+                tr.innerHTML = `
+                    <td class="p-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-sm font-bold text-indigo-600 shrink-0">${t.name.charAt(0)}</div>
+                            <div class="min-w-0">
+                                <div class="font-medium text-slate-800 text-sm sm:text-base truncate">${t.name}</div>
+                                <div class="text-xs text-slate-400">${t.department}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="p-3 text-center">
+                        <span class="font-bold text-slate-800 text-sm sm:text-base">${t.total}</span>
+                        <div class="text-xs text-slate-400 sm:hidden">เสร็จ ${t.completed}</div>
+                    </td>
+                    <td class="p-3 text-center hidden sm:table-cell">
+                        <span class="font-bold text-emerald-600">${t.completed}</span>
+                        <span class="text-xs text-slate-400 ml-1">/ รับทราบ ${t.acknowledged}</span>
+                    </td>
+                    <td class="p-3 text-center hidden sm:table-cell">
+                        <span class="font-bold ${t.unread > 0 ? 'text-red-500' : 'text-slate-400'}">${t.unread}</span>
+                    </td>
+                    <td class="p-3">
+                        <div class="flex items-center gap-2 justify-center">
+                            <div class="w-16 sm:w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full ${barColor} rounded-full progress-bar-fill" style="width: ${t.percent}%"></div>
+                            </div>
+                            <span class="font-bold text-xs ${t.percent >= 75 ? 'text-emerald-600' : t.percent >= 50 ? 'text-indigo-600' : t.percent >= 25 ? 'text-amber-600' : 'text-red-500'}">${t.percent}%</span>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- 13. Admin Document Management ---
+        let adminEditingDoc = null;
+
+        function openAdminEditModal(docStr) {
+            const doc = JSON.parse(decodeURIComponent(docStr));
+            adminEditingDoc = doc;
+            document.getElementById('adminEditDocId').value = doc.id;
+            document.getElementById('adminEditDocNo').value = doc.docNo || '';
+            document.getElementById('adminEditTitle').value = doc.title || '';
+            document.getElementById('adminEditNote').value = doc.note || '';
+            document.getElementById('adminEditAttachment').value = '';
+
+            // Populate target select
+            const sel = document.getElementById('adminEditTarget');
+            sel.innerHTML = '<option value="all">📢 ทุกคน</option>';
+            globalTeacherList.forEach(t => {
+                sel.innerHTML += `<option value="${t.id}">${t.name} (${t.department})</option>`;
+            });
+
+            // Pre-select current targets
+            if (doc.target) {
+                const currentTargets = doc.target.split(',').map(s => s.trim());
+                for (let opt of sel.options) {
+                    if (currentTargets.includes(opt.value)) opt.selected = true;
+                }
+            }
+
+            document.getElementById('modalAdminEdit').style.display = 'flex';
+        }
+
+        function adminQuickDelete(docId) {
+            if (!confirm('⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบเอกสารนี้? การลบไม่สามารถยกเลิกได้')) return;
+            showLoading(true);
+            document.getElementById('loadingText').innerText = 'กำลังลบเอกสาร...';
+            gasCall('deleteDocument', { docId: docId }).then(function(res) {
+                showLoading(false);
+                if (res.success) {
+                    showToast('✅ ' + res.message);
+                    loadDashboardData();
+                } else {
+                    showToast('❌ ' + res.message, 'error');
+                }
+            }).catch(function(err) {
+                showLoading(false);
+                showToast('❌ ลบล้มเหลว: ' + err, 'error');
+            });
+        }
+
+        function adminDeleteDoc() {
+            const docId = document.getElementById('adminEditDocId').value;
+            if (!confirm('⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบเอกสารนี้?')) return;
+            closeModal('modalAdminEdit');
+            showLoading(true);
+            document.getElementById('loadingText').innerText = 'กำลังลบเอกสาร...';
+            gasCall('deleteDocument', { docId: docId }).then(function(res) {
+                showLoading(false);
+                if (res.success) {
+                    showToast('✅ ' + res.message);
+                    loadDashboardData();
+                } else {
+                    showToast('❌ ' + res.message, 'error');
+                }
+            }).catch(function(err) {
+                showLoading(false);
+                showToast('❌ ลบล้มเหลว: ' + err, 'error');
+            });
+        }
+
+        async function adminSaveEdit() {
+            const docId = document.getElementById('adminEditDocId').value;
+            const newDocNo = document.getElementById('adminEditDocNo').value.trim();
+            const newTitle = document.getElementById('adminEditTitle').value.trim();
+            const newNote = document.getElementById('adminEditNote').value.trim();
+            const targetSel = document.getElementById('adminEditTarget');
+            const newTargets = [];
+            for (let opt of targetSel.selectedOptions) newTargets.push(opt.value);
+            const newTargetStr = newTargets.join(',');
+            const attachFile = document.getElementById('adminEditAttachment').files[0];
+
+            closeModal('modalAdminEdit');
+            showLoading(true);
+            document.getElementById('loadingText').innerText = 'กำลังบันทึกการแก้ไข...';
+
+            try {
+                // Batch update ทุกฟิลด์ในครั้งเดียว (แทนที่จะเรียก server หลายรอบ)
+                const fieldsToUpdate = {};
+                if (newDocNo && newDocNo !== (adminEditingDoc.docNo || '')) fieldsToUpdate.docNo = newDocNo;
+                if (newTitle && newTitle !== adminEditingDoc.title) fieldsToUpdate.title = newTitle;
+                if (newNote !== (adminEditingDoc.note || '')) fieldsToUpdate.note = newNote;
+                if (newTargetStr !== (adminEditingDoc.target || '')) fieldsToUpdate.target = newTargetStr;
+
+                if (Object.keys(fieldsToUpdate).length > 0) {
+                    await gasCall('updateDocumentFields', { docId: docId, fieldsObj: fieldsToUpdate });
+                }
+
+                // Update attachment (ต้องแยกเพราะมี file upload)
+                if (attachFile) {
+                    const attBase64 = await new Promise((resolve) => {
+                        const r = new FileReader();
+                        r.onload = e => resolve(e.target.result.split(',')[1]);
+                        r.readAsDataURL(attachFile);
+                    });
+                    await gasCall('updateDocumentAttachment', { docId: docId, attachmentData: attBase64, attachmentName: attachFile.name, attachmentMimeType: attachFile.type });
+                }
+
+                showLoading(false);
+                showToast('✅ บันทึกการแก้ไขเรียบร้อย');
+                loadDashboardData();
+            } catch(err) {
+                showLoading(false);
+                showToast('❌ เกิดข้อผิดพลาด: ' + err, 'error');
+            }
+        }
+        // --- 14. Teacher Management (CRUD) ---
+        let teacherManageList = [];
+        let teacherEditMode = 'add'; // 'add' or 'edit'
+
+        function renderTeacherManagement() {
+            const tbody = document.getElementById('documentTableBody');
+            tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400"><div class="animate-pulse">กำลังโหลดรายชื่อบุคลากร...</div></td></tr>`;
+            document.getElementById('resultCount').textContent = 'กำลังโหลด...';
+
+            gasCall('getTeacherListFull').then(function(data) {
+                teacherManageList = data || [];
+                renderTeacherManagementTable();
+            }).catch(function(err) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-400">โหลดข้อมูลล้มเหลว</td></tr>`;
+            });
+        }
+
+        function renderTeacherManagementTable() {
+            const tbody = document.getElementById('documentTableBody');
+            tbody.innerHTML = '';
+            document.getElementById('resultCount').textContent = `แสดง ${teacherManageList.length} คน`;
+
+            // Add button row
+            const addRow = document.createElement('tr');
+            addRow.className = 'bg-emerald-50/50 border-b border-emerald-200';
+            addRow.innerHTML = `
+                <td colspan="5" class="p-3">
+                    <button onclick="openTeacherAddModal()" class="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white px-4 py-2.5 rounded-xl font-bold shadow-sm text-sm sm:text-base flex items-center gap-2 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        เพิ่มบุคลากรใหม่
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(addRow);
+
+            // Header
+            const headerTr = document.createElement('tr');
+            headerTr.className = 'bg-slate-50 border-b border-slate-200';
+            headerTr.innerHTML = `
+                <th class="p-3 text-left text-xs sm:text-sm font-bold text-slate-500 uppercase">รหัส</th>
+                <th class="p-3 text-left text-xs sm:text-sm font-bold text-slate-500 uppercase">ชื่อ-สกุล</th>
+                <th class="p-3 text-left text-xs sm:text-sm font-bold text-slate-500 uppercase hidden sm:table-cell">หมวดวิชา</th>
+                <th class="p-3 text-center text-xs sm:text-sm font-bold text-slate-500 uppercase">LINE</th>
+                <th class="p-3 text-right text-xs sm:text-sm font-bold text-slate-500 uppercase">จัดการ</th>
+            `;
+            tbody.appendChild(headerTr);
+
+            if (teacherManageList.length === 0) {
+                tbody.innerHTML += `<tr><td colspan="5" class="p-12 text-center text-slate-400">ยังไม่มีบุคลากรในระบบ</td></tr>`;
+                return;
+            }
+
+            teacherManageList.forEach((t, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = 'table-row border-b border-slate-100 animate-fadeInUp';
+                tr.style.animationDelay = `${idx * 0.03}s`;
+
+                const hasLine = t.lineToken && t.lineToken.trim() !== '' || t.lineUserId && t.lineUserId.trim() !== '';
+                const lineStatus = hasLine
+                    ? `<span class="status-badge text-green-700 bg-green-50 border border-green-200">📲 เชื่อมแล้ว</span>`
+                    : `<span class="status-badge text-slate-500 bg-slate-50 border border-slate-200">⬜ ยังไม่ตั้ง</span>`;
+
+                tr.innerHTML = `
+                    <td class="p-3"><span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md text-xs sm:text-sm">${t.id}</span></td>
+                    <td class="p-3 font-medium text-slate-800 text-sm sm:text-base">${t.name}</td>
+                    <td class="p-3 text-slate-500 text-sm hidden sm:table-cell">${t.department}</td>
+                    <td class="p-3 text-center">${lineStatus}</td>
+                    <td class="p-3">
+                        <div class="flex justify-end items-center gap-1.5 sm:gap-2">
+                            <button onclick="openTeacherEditModal('${encodeURIComponent(JSON.stringify(t))}')" class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 text-xs sm:text-sm font-semibold text-indigo-600 transition flex items-center gap-1 whitespace-nowrap">✏️ <span class="hidden sm:inline">แก้ไข</span></button>
+                            <button onclick="deleteTeacherConfirm('${t.id}', '${t.name}')" class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 text-xs sm:text-sm font-semibold text-red-600 transition flex items-center gap-1 whitespace-nowrap">🗑️ <span class="hidden sm:inline">ลบ</span></button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openTeacherAddModal() {
+            teacherEditMode = 'add';
+            document.getElementById('modalTeacherTitle').textContent = '➕ เพิ่มบุคลากรใหม่';
+            document.getElementById('teacherEditOriginalId').value = '';
+            document.getElementById('teacherEditId').value = '';
+            document.getElementById('teacherEditId').disabled = false;
+            document.getElementById('teacherEditName').value = '';
+            document.getElementById('teacherEditDept').value = '';
+            document.getElementById('teacherEditLine').value = '';
+            document.getElementById('teacherEditDrive').value = '';
+            document.getElementById('modalTeacherEdit').style.display = 'flex';
+        }
+
+        function openTeacherEditModal(teacherStr) {
+            const t = JSON.parse(decodeURIComponent(teacherStr));
+            teacherEditMode = 'edit';
+            document.getElementById('modalTeacherTitle').textContent = '✏️ แก้ไขข้อมูลบุคลากร';
+            document.getElementById('teacherEditOriginalId').value = t.id;
+            document.getElementById('teacherEditId').value = t.id;
+            document.getElementById('teacherEditId').disabled = false;
+            document.getElementById('teacherEditName').value = t.name;
+            document.getElementById('teacherEditDept').value = t.department;
+            document.getElementById('teacherEditLine').value = t.lineToken || t.lineUserId || '';
+            document.getElementById('teacherEditDrive').value = t.driveFolderId || '';
+            document.getElementById('modalTeacherEdit').style.display = 'flex';
+        }
+
+        function saveTeacher() {
+            const id = document.getElementById('teacherEditId').value.trim();
+            const name = document.getElementById('teacherEditName').value.trim();
+            const dept = document.getElementById('teacherEditDept').value.trim();
+            const lineToken = document.getElementById('teacherEditLine').value.trim();
+            const driveFolderId = document.getElementById('teacherEditDrive').value.trim();
+
+            if (!id || !name || !dept) {
+                showToast('กรุณากรอกข้อมูลที่จำเป็นให้ครบ', 'error');
+                return;
+            }
+
+            closeModal('modalTeacherEdit');
+            showLoading(true);
+            document.getElementById('loadingText').innerText = 'กำลังบันทึกข้อมูลบุคลากร...';
+
+            if (teacherEditMode === 'add') {
+                gasCall('addTeacher', { id: id, name: name, department: dept, lineToken: lineToken, driveFolderId: driveFolderId }).then(function(res) {
+                    showLoading(false);
+                    if (res.success) {
+                        showToast('✅ ' + res.message);
+                        refreshTeacherData();
+                    } else {
+                        showToast('❌ ' + res.message, 'error');
+                    }
+                }).catch(function(err) {
+                    showLoading(false);
+                    showToast('❌ บันทึกล้มเหลว: ' + err, 'error');
+                });
+            } else {
+                const originalId = document.getElementById('teacherEditOriginalId').value;
+                gasCall('updateTeacher', { originalId: originalId, id: id, name: name, department: dept, lineToken: lineToken, driveFolderId: driveFolderId }).then(function(res) {
+                    showLoading(false);
+                    if (res.success) {
+                        showToast('✅ ' + res.message);
+                        refreshTeacherData();
+                    } else {
+                        showToast('❌ ' + res.message, 'error');
+                    }
+                }).catch(function(err) {
+                    showLoading(false);
+                    showToast('❌ บันทึกล้มเหลว: ' + err, 'error');
+                });
+            }
+        }
+
+        function deleteTeacherConfirm(teacherId, teacherName) {
+            if (!confirm(`⚠️ คุณแน่ใจว่าต้องการลบ "${teacherName}" ออกจากระบบ? การลบจะไม่สามารถย้อนกลับได้`)) return;
+            showLoading(true);
+            document.getElementById('loadingText').innerText = 'กำลังลบบุคลากร...';
+            gasCall('deleteTeacher', { teacherId: teacherId }).then(function(res) {
+                showLoading(false);
+                if (res.success) {
+                    showToast('✅ ' + res.message);
+                    refreshTeacherData();
+                } else {
+                    showToast('❌ ' + res.message, 'error');
+                }
+            }).catch(function(err) {
+                showLoading(false);
+                showToast('❌ ลบล้มเหลว: ' + err, 'error');
+            });
+        }
+
+        function refreshTeacherData() {
+            // Reload teacher list for login dropdown & other selects
+            gasCall('getTeacherList').then(function(teachers) {
+                globalTeacherList = teachers || [];
+                const loginSelect = document.getElementById('loginTeacherSelect');
+                const distSelect = document.getElementById('teacherSelect');
+                loginSelect.innerHTML = '<option value="">-- เลือกชื่อของคุณ --</option>';
+                distSelect.innerHTML = '<option value="all">📢 แจ้งเตือนทุกคน</option>';
+                globalTeacherList.forEach(t => {
+                    loginSelect.innerHTML += `<option value="${t.id}">${t.name} (${t.department})</option>`;
+                    distSelect.innerHTML += `<option value="${t.id}">${t.name} (${t.department})</option>`;
+                });
+            });
+
+            // Re-render management table
+            if (currentTab === 'teacher-manage') {
+                renderTeacherManagement();
+            }
+        }
+    </script>
+</body>
+</html>
