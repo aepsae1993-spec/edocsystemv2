@@ -174,9 +174,15 @@
         [data-theme="dark"] textarea::placeholder { color: var(--text-muted) !important; }
 
         /* Table */
-        [data-theme="dark"] table { background: var(--bg-card) !important; }
+        [data-theme="dark"] table { background: var(--bg-card) !important; color: var(--text-base) !important; }
         [data-theme="dark"] thead th { background: var(--bg-card2) !important; color: var(--text-muted) !important; border-color: var(--border2) !important; }
-        [data-theme="dark"] tbody td { border-color: var(--border2) !important; }
+        [data-theme="dark"] tbody tr { background: var(--bg-card); color: var(--text-base) !important; }
+        [data-theme="dark"] tbody tr[class*="bg-red"] { background: rgba(220,38,38,0.12) !important; }
+        [data-theme="dark"] tbody td { border-color: var(--border2) !important; color: var(--text-base) !important; }
+        [data-theme="dark"] tbody td .text-slate-800,
+        [data-theme="dark"] tbody td .font-medium { color: var(--text-head) !important; }
+        [data-theme="dark"] tbody td .text-slate-500,
+        [data-theme="dark"] tbody td .text-slate-600 { color: var(--text-muted) !important; }
         [data-theme="dark"] .table-row:hover { background: var(--table-hover) !important; }
 
         /* Stat cards */
@@ -241,6 +247,9 @@
             background: #fde68a;
             transform: rotate(-20deg) scale(1.1);
         }
+
+        /* Editor canvas background */
+        #editorMain { background: var(--bg-page); }
 
         /* Dark login page tweak */
         [data-theme="dark"] #viewLogin { background: linear-gradient(135deg,#06041a 0%,#120d2e 30%,#1a1040 60%,#200e4a 100%) !important; }
@@ -631,7 +640,7 @@
                 </button>
                 <input type="file" id="stampUpload" accept="image/png,image/jpeg" class="hidden-input" multiple>
             </aside>
-            <main class="flex-1 overflow-auto p-2 sm:p-8 flex justify-center items-start" style="background: radial-gradient(circle at center, #f1f5f9 1px, transparent 1px); background-size: 20px 20px;">
+            <main class="flex-1 overflow-auto p-2 sm:p-8 flex justify-center items-start" id="editorMain">
                 <div id="scalableContent" class="flex flex-col gap-4 sm:gap-8 origin-top pb-20 items-center w-full"></div>
             </main>
         </div>
