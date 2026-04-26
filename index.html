@@ -1489,11 +1489,12 @@
                 const overdueTag = isOverdue ? `<span class="inline-flex items-center gap-1 text-xs font-bold text-red-600 bg-red-100 border border-red-200 px-2 py-0.5 rounded-full ml-1">🔥 ค้าง ${isOverdue} ชม.</span>` : '';
                 const urgentTag = doc.urgent ? `<span class="inline-flex items-center gap-1 text-xs font-bold text-white bg-red-600 px-2 py-0.5 rounded-full ml-1 animate-pulse">🔴 ด่วนมาก</span>` : '';
                 
-                // แปลง timestamp เป็นรูปแบบอ่านง่าย
+                // แสดงเวลาแจกจ่ายสำหรับครู
                 let timeTag = '';
-                if (doc.timestamp && currentUser.role === 'teacher') {
-                    const tp = doc.timestamp.match(/(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}):(\d{2})/);
-                    if (tp) timeTag = `<div class="text-xs mt-0.5" style="color:var(--text-muted)">🕐 แจกจ่าย ${tp[1]}/${tp[2]}/${tp[3]} เวลา ${tp[4]}:${tp[5]} น.</div>`;
+                if (currentUser.role === 'teacher' && doc.status && doc.status.includes('แจกจ่าย')) {
+                    const ts = String(doc.timestamp || '').trim();
+                    const timeStr = ts.length >= 16 ? ts.slice(0, 16) : ts; // ตัดวินาทีออก
+                    if (timeStr) timeTag = `<div class="text-xs mt-1" style="color:var(--text-muted)">🕐 แจกจ่ายเมื่อ ${timeStr} น.</div>`;
                 }
 
                 tr.innerHTML = `
