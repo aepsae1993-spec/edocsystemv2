@@ -894,7 +894,7 @@
 
         // --- 1b. Supabase config (ใส่ค่าจาก Supabase Dashboard > Settings > API) ---
         const SUPABASE_URL    = 'https://fxeqrmexmarnjlxrcwqf.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ZXFybWV4bWFybmpseHJjd3FmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjkzNzQsImV4cCI6MjA5MjQ0NTM3NH0.EfnKjqZTE4uPwt_ohC8_u7OY3tjvmXBuSXNPt_eWlEw';             // ← เปลี่ยน
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ZXFybWV4bWFybmpseHJjd3FmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjkzNzQsImV4cCI6MjA5MjQ0NTM3NH0.EfnKjqZTE4uPwt_ohC8_u7OY3tjvmXBuSXNPt_eWlEw';
         const SUPABASE_BUCKET = 'documents';                   // ← ชื่อ bucket ที่สร้าง
 
         function isSupabaseUrl(url) { return url && url.includes('supabase'); }
@@ -1733,7 +1733,7 @@
                 fCanvas.on('object:added', function() { canvasEdited = true; });
 
                 document.getElementById('editorAside').style.display = '';
-                document.getElementById('btnSignatureTool').style.display = '';
+                document.getElementById('btnSignatureTool').classList.remove('hidden');
                 document.getElementById('actionBtnDirector').style.display = 'flex';
                 showLoading(false);
 
@@ -2009,7 +2009,7 @@
 
         function setupEditorUI(state) {
             document.getElementById('editorAside').style.display = ''; // reset
-            document.getElementById('btnSignatureTool').style.display = 'none';
+            document.getElementById('btnSignatureTool').classList.add('hidden');
             document.getElementById('actionBtnClerk').style.display = 'none';
             document.getElementById('actionBtnDirector').style.display = 'none';
             document.getElementById('actionBtnDistribute').style.display = 'none';
