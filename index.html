@@ -1789,15 +1789,17 @@
             if (sigFabric) { sigFabric.dispose(); sigFabric = null; }
             const container = document.getElementById('sigDrawCanvas').parentElement;
             const w = container.offsetWidth - 2 || 380;
-            sigFabric = new fabric.Canvas('sigDrawCanvas', { isDrawingMode: true, backgroundColor: '#ffffff' });
+            sigFabric = new fabric.Canvas('sigDrawCanvas', { isDrawingMode: true });
             sigFabric.freeDrawingBrush.color = '#1e1b4b';
             sigFabric.freeDrawingBrush.width = 2.5;
             sigFabric.setWidth(w);
             sigFabric.setHeight(160);
+            // พื้นขาวแค่ CSS (ไม่ติดตอน export)
+            sigFabric.wrapperEl.style.background = '#ffffff';
         }
 
         function clearSigDrawCanvas() {
-            if (sigFabric) { sigFabric.clear(); sigFabric.backgroundColor = '#ffffff'; sigFabric.renderAll(); }
+            if (sigFabric) { sigFabric.clear(); sigFabric.renderAll(); }
         }
 
         function getSigDataUrl() {
