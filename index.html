@@ -846,8 +846,37 @@
     </div>
 
     <script>
-        // --- 1. GAS API URL (เปลี่ยนเป็น URL ของ Web App ที่ Deploy แล้ว) ---
+        // --- 1. GAS API URL ---
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbzCHnYkofhWusd4vs73vJB93v-llTJEjvaeWD4mtSSckjcpPIqM76phuUDsWSmyT5XVow/exec';
+
+        // --- 1b. Supabase config (ใส่ค่าจาก Supabase Dashboard > Settings > API) ---
+        const SUPABASE_URL    = 'https://fxeqrmexmarnjlxrcwqf.supabase.co';   // ← เปลี่ยน
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ZXFybWV4bWFybmpseHJjd3FmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjkzNzQsImV4cCI6MjA5MjQ0NTM3NH0.EfnKjqZTE4uPwt_ohC8_u7OY3tjvmXBuSXNPt_eWlEw';             // ← เปลี่ยน
+        const SUPABASE_BUCKET = 'documents';                   // ← ชื่อ bucket ที่สร้าง
+
+        function isSupabaseUrl(url) { return url && url.includes('supabase'); }
+
+        async function uploadToSupabase(file) {
+            const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+            const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${safeName}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Content-Type': file.type || 'application/pdf',
+                    'x-upsert': 'false'
+                },
+                body: file
+            });
+            if (!res.ok) throw new Error('Supabase upload failed: ' + await res.text());
+            return `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${safeName}`;
+        }
+
+        function b64ToBlob(b64, type = 'application/pdf') {
+            const bin = atob(b64);
+            const buf = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+            return new Blob([buf], { type });
+        }
 
         async function gasCall(action, params) {
             params = params || {};
@@ -1529,28 +1558,39 @@
             switchView('viewEditor');
             
             if(pdfCache.has(doc.id)) {
-                // โหลดจากแรม — ไม่ต้อง call GAS
-                await renderFileToEditor(pdfCache.get(doc.id), null, false);
+                await renderFileToEditor(pdfCache.get(doc.id), null, pdfCache.get(doc.id) instanceof ArrayBuffer);
                 renderAttachmentPanel(doc);
                 return;
             }
 
             showLoading(true);
-            document.getElementById('loadingText').innerText = "กำลังดึงข้อมูล PDF จากเซิร์ฟเวอร์...";
+            document.getElementById('loadingText').innerText = "กำลังดึงข้อมูล PDF...";
 
-            gasCall('getDocumentBase64', { docId: doc.id }).then(async function(base64) {
-                if(base64) {
-                    pdfCache.set(doc.id, base64); // เก็บลงแรม
-                    await renderFileToEditor(base64, null, false);
-                    renderAttachmentPanel(doc);
+            try {
+                let ab;
+                if (isSupabaseUrl(doc.fileUrl)) {
+                    // ดึงตรงจาก Supabase (เร็ว)
+                    ab = await fetch(doc.fileUrl).then(function(r) { return r.arrayBuffer(); });
+                    pdfCache.set(doc.id, ab);
+                    await renderFileToEditor(ab, null, false);
                 } else {
-                    renderFallbackEditor(doc);
-                    showLoading(false);
+                    // Legacy: ดึงผ่าน GAS
+                    const base64 = await gasCall('getDocumentBase64', { docId: doc.id });
+                    if (base64) {
+                        pdfCache.set(doc.id, base64);
+                        await renderFileToEditor(base64, null, false);
+                    } else {
+                        renderFallbackEditor(doc);
+                        showLoading(false);
+                        renderAttachmentPanel(doc);
+                        return;
+                    }
                 }
-            }).catch(function() {
+                renderAttachmentPanel(doc);
+            } catch(e) {
                 renderFallbackEditor(doc);
                 showLoading(false);
-            });
+            }
         }
 
         // ── Director landing & sign flow ──────────────────────────────
@@ -1588,15 +1628,26 @@
             showLoading(true);
             document.getElementById('loadingText').innerText = 'กำลังโหลดเอกสารสำหรับลงนาม...';
             try {
-                let base64 = pdfCache.get(currentDocument.id);
-                if (!base64) {
-                    base64 = await gasCall('getDocumentBase64', { docId: currentDocument.id });
-                    if (base64) pdfCache.set(currentDocument.id, base64);
-                }
-                if (!base64) { showToast('ไม่สามารถโหลดเอกสารได้', 'error'); showLoading(false); return; }
+                let ab = pdfCache.has(currentDocument.id) && pdfCache.get(currentDocument.id) instanceof ArrayBuffer
+                    ? pdfCache.get(currentDocument.id)
+                    : null;
 
-                // decode เพื่อนับหน้าและ render หน้า 1
-                const ab = await fetch(`data:application/pdf;base64,${base64}`).then(function(r) { return r.arrayBuffer(); });
+                if (!ab) {
+                    if (isSupabaseUrl(currentDocument.fileUrl)) {
+                        // ดึงตรงจาก Supabase — เร็วมาก
+                        ab = await fetch(currentDocument.fileUrl).then(function(r) { return r.arrayBuffer(); });
+                    } else {
+                        // Legacy: ผ่าน GAS
+                        let base64 = pdfCache.get(currentDocument.id);
+                        if (!base64) {
+                            base64 = await gasCall('getDocumentBase64', { docId: currentDocument.id });
+                            if (base64) pdfCache.set(currentDocument.id, base64);
+                        }
+                        if (!base64) { showToast('ไม่สามารถโหลดเอกสารได้', 'error'); showLoading(false); return; }
+                        ab = await fetch(`data:application/pdf;base64,${base64}`).then(function(r) { return r.arrayBuffer(); });
+                    }
+                    pdfCache.set(currentDocument.id, ab);
+                }
                 const pdfDoc = await pdfjsLib.getDocument(ab).promise;
                 directorOriginalPageCount = pdfDoc.numPages;
 
@@ -1926,7 +1977,9 @@
             let imgSrc = null;
 
             try {
-                if(isFile) {
+                if(fileOrBase64 instanceof ArrayBuffer) {
+                    pdfDoc = await pdfjsLib.getDocument(fileOrBase64).promise;
+                } else if(isFile) {
                     if(fileOrBase64.type === 'application/pdf') {
                         const ab = await fileOrBase64.arrayBuffer();
                         pdfDoc = await pdfjsLib.getDocument(ab).promise;
@@ -1935,7 +1988,6 @@
                         imgSrc = await new Promise(r => { const rd = new FileReader(); rd.onload = e => r(e.target.result); rd.readAsDataURL(fileOrBase64); });
                     }
                 } else {
-                    // fetch-decode เร็วกว่า atob+loop มาก
                     const ab = await fetch(`data:application/pdf;base64,${fileOrBase64}`).then(r => r.arrayBuffer());
                     pdfDoc = await pdfjsLib.getDocument(ab).promise;
                 }
@@ -2309,7 +2361,10 @@
                     
                     // ผอ.ลงนามแค่หน้า 1 → ต่อหน้า 2...N จาก PDF ต้นฉบับ
                     if (currentSubmitAction === 'director' && directorOriginalPageCount > 1) {
-                        const origAb = await fetch(`data:application/pdf;base64,${pdfCache.get(currentDocument.id)}`).then(function(r) { return r.arrayBuffer(); });
+                        const cached = pdfCache.get(currentDocument.id);
+                        const origAb = cached instanceof ArrayBuffer
+                            ? cached
+                            : await fetch(`data:application/pdf;base64,${cached}`).then(function(r) { return r.arrayBuffer(); });
                         const origPdf = await pdfjsLib.getDocument(origAb).promise;
                         for (let p = 2; p <= directorOriginalPageCount; p++) {
                             document.getElementById('loadingText').innerText = `กำลังรวมหน้า ${p}/${directorOriginalPageCount}...`;
@@ -2336,7 +2391,19 @@
                     document.getElementById('loadingText').innerText = "กำลังประมวลผล...";
                 }
 
-                // Multiple attachments
+                const docNo = currentDocument ? currentDocument.docNo : newGeneratedDocNo;
+                const fileName = `EDOC_${docNo.replace('/','_')}.pdf`;
+
+                // clerk → อัปโหลด PDF ไป Supabase แทน Drive (เร็วกว่า)
+                let supabaseFileUrl = null;
+                if (base64Pdf && currentSubmitAction === 'clerk') {
+                    document.getElementById('loadingText').innerText = "กำลังอัปโหลดไฟล์...";
+                    const blob = b64ToBlob(base64Pdf, 'application/pdf');
+                    supabaseFileUrl = await uploadToSupabase(new File([blob], fileName, { type: 'application/pdf' }));
+                    base64Pdf = null; // ไม่ส่ง base64 ไป GAS แล้ว
+                }
+
+                // Multiple attachments → Drive เหมือนเดิม
                 const attachments = [];
                 const attachFileEl = document.getElementById('attachmentUpload');
                 if (attachFileEl && attachFileEl.files.length > 0) {
@@ -2358,7 +2425,6 @@
                 const docTypeEl = document.getElementById('docTypeSelect');
                 const docType = docTypeEl ? docTypeEl.value : '';
                 const docTitle = titleInput.value.trim();
-                const docNo = currentDocument ? currentDocument.docNo : newGeneratedDocNo;
 
                 document.getElementById('loadingText').innerText = "กำลังบันทึกและส่งเอกสาร...";
 
@@ -2367,7 +2433,8 @@
                     docId: currentDocument ? currentDocument.id : null,
                     docNo: docNo, title: docTitle, sender: currentUser.name,
                     note: document.getElementById('sendNote').value,
-                    fileData: base64Pdf, fileName: `EDOC_${docNo.replace('/','_')}.pdf`,
+                    fileData: base64Pdf, fileName: fileName,
+                    supabaseFileUrl: supabaseFileUrl,         // URL จาก Supabase (clerk)
                     existingFileUrl: currentDocument ? currentDocument.fileUrl : null,
                     targetTeachers: targets,
                     attachments: attachments,
