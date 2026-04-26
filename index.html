@@ -403,10 +403,11 @@
         <div class="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl translate-x-1/3 translate-y-1/3"></div>
         
         <div class="relative bg-white/95 backdrop-blur-xl p-6 sm:p-10 rounded-3xl shadow-luxe w-full max-w-lg text-center mx-4 animate-fadeInUp border border-white/60">
-            <div class="w-20 h-20 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/40 rotate-3">
-                <svg class="w-10 h-10 -rotate-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-            </div>
-            <h1 class="text-3xl sm:text-4xl font-bold text-gradient mb-2">E-Document System</h1>
+            <img src="https://fxeqrmexmarnjlxrcwqf.supabase.co/storage/v1/object/public/school-assets/logo.png"
+                 alt="โลโก้โรงเรียน"
+                 class="w-24 h-24 rounded-full mx-auto mb-5 shadow-lg object-cover border-4 border-white"
+                 onerror="this.style.display='none'">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gradient mb-1">โรงเรียนวัดบางขุด</h1>
             <p class="text-slate-500 mb-8 text-base sm:text-lg">ระบบสารบรรณอิเล็กทรอนิกส์</p>
             
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
@@ -639,6 +640,11 @@
                     <span class="text-[9px] sm:text-[10px]">ตรา</span>
                 </button>
                 <input type="file" id="stampUpload" accept="image/png,image/jpeg" class="hidden-input" multiple>
+                <!-- ปุ่มลายเซ็นสำเร็จรูป (แสดงเฉพาะ ผอ.) -->
+                <button id="btnSignatureTool" onclick="openSignatureModal()" class="hidden p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-100 cursor-pointer text-center text-xs font-bold leading-tight transition" title="ลายเซ็นสำเร็จรูป">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6-6 3 3-9.5 9.5H6v-2.5L9 11z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18"/></svg>
+                    <span class="text-[9px] sm:text-[10px]">เซ็น</span>
+                </button>
             </aside>
             <main class="flex-1 overflow-auto p-2 sm:p-8 flex justify-center items-start" id="editorMain">
                 <div id="scalableContent" class="flex flex-col gap-4 sm:gap-8 origin-top pb-20 items-center w-full"></div>
@@ -647,6 +653,43 @@
     </div>
 
     <!-- ==================== MODALS ==================== -->
+
+    <!-- Modal: Signature -->
+    <div id="modalSignature" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[3000] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden animate-fadeInUp" style="background:var(--bg-card);border:1px solid var(--border)">
+            <div class="flex items-center justify-between p-4 border-b" style="border-color:var(--border)">
+                <h3 class="text-lg font-bold" style="color:var(--text-head)">✍️ ลายเซ็นสำเร็จรูป</h3>
+                <button onclick="closeModal('modalSignature')" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+            </div>
+
+            <!-- มีลายเซ็นแล้ว -->
+            <div id="sigSavedView" class="hidden p-5 flex flex-col gap-4">
+                <p class="text-sm" style="color:var(--text-muted)">ลายเซ็นที่บันทึกไว้:</p>
+                <div class="border-2 border-dashed rounded-xl p-3 flex justify-center" style="border-color:var(--border)">
+                    <img id="sigPreviewImg" class="max-h-28 object-contain" alt="ลายเซ็น">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="placeSignatureOnCanvas()" class="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition">วางบนเอกสาร</button>
+                    <button onclick="showSigDrawView()" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-semibold text-sm transition" style="background:var(--bg-card2);color:var(--text-base)">เปลี่ยน</button>
+                    <button onclick="clearSavedSignature()" class="px-4 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-semibold text-sm transition">ลบ</button>
+                </div>
+            </div>
+
+            <!-- วาดลายเซ็นใหม่ -->
+            <div id="sigDrawView" class="p-5 flex flex-col gap-4">
+                <p class="text-sm" style="color:var(--text-muted)">วาดลายเซ็นของท่านในกรอบด้านล่าง:</p>
+                <div class="border-2 rounded-xl overflow-hidden bg-white relative" style="border-color:var(--border)">
+                    <canvas id="sigDrawCanvas" width="380" height="160" style="display:block;width:100%;touch-action:none;cursor:crosshair"></canvas>
+                    <button onclick="clearSigDrawCanvas()" class="absolute top-2 right-2 text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-500 transition">ล้าง</button>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="saveSignature()" class="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition">บันทึกลายเซ็น</button>
+                    <button onclick="placeSignatureDirectly()" class="flex-1 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-bold transition">วางโดยไม่บันทึก</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal: Stamp Gallery -->
     <div id="modalStampGallery" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[3000] hidden items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden animate-fadeInUp">
@@ -850,7 +893,7 @@
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbzCHnYkofhWusd4vs73vJB93v-llTJEjvaeWD4mtSSckjcpPIqM76phuUDsWSmyT5XVow/exec';
 
         // --- 1b. Supabase config (ใส่ค่าจาก Supabase Dashboard > Settings > API) ---
-        const SUPABASE_URL    = 'https://fxeqrmexmarnjlxrcwqf.supabase.co';   // ← เปลี่ยน
+        const SUPABASE_URL    = 'https://fxeqrmexmarnjlxrcwqf.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ZXFybWV4bWFybmpseHJjd3FmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjkzNzQsImV4cCI6MjA5MjQ0NTM3NH0.EfnKjqZTE4uPwt_ohC8_u7OY3tjvmXBuSXNPt_eWlEw';             // ← เปลี่ยน
         const SUPABASE_BUCKET = 'documents';                   // ← ชื่อ bucket ที่สร้าง
 
@@ -1690,6 +1733,7 @@
                 fCanvas.on('object:added', function() { canvasEdited = true; });
 
                 document.getElementById('editorAside').style.display = '';
+                document.getElementById('btnSignatureTool').style.display = '';
                 document.getElementById('actionBtnDirector').style.display = 'flex';
                 showLoading(false);
 
@@ -1698,6 +1742,137 @@
                 showLoading(false);
             }
         }
+
+        // ── Signature (ลายเซ็นสำเร็จรูป) ─────────────────────────────
+        const SIG_URL_KEY = 'sig_url_'; // + userId
+        let sigFabric = null;
+        let cachedSigUrl = null; // URL ของลายเซ็นที่โหลดมาแล้ว
+
+        async function openSignatureModal() {
+            document.getElementById('modalSignature').style.display = 'flex';
+            // โหลด URL จาก localStorage → GAS
+            const localUrl = localStorage.getItem(SIG_URL_KEY + currentUser.id);
+            if (localUrl) {
+                showSigSavedView(localUrl);
+            } else {
+                // ลอง fetch จาก GAS (เผื่อเคยบันทึกบนเครื่องอื่น)
+                showSigLoadingView();
+                const url = await gasCall('getSignatureUrl', { userId: currentUser.id });
+                if (url) {
+                    localStorage.setItem(SIG_URL_KEY + currentUser.id, url);
+                    showSigSavedView(url);
+                } else {
+                    showSigDrawView();
+                }
+            }
+        }
+
+        function showSigLoadingView() {
+            document.getElementById('sigSavedView').style.display = 'none';
+            document.getElementById('sigDrawView').style.display = 'none';
+        }
+
+        function showSigSavedView(url) {
+            cachedSigUrl = url;
+            document.getElementById('sigPreviewImg').src = url;
+            document.getElementById('sigSavedView').style.display = 'flex';
+            document.getElementById('sigDrawView').style.display = 'none';
+        }
+
+        function showSigDrawView() {
+            document.getElementById('sigSavedView').style.display = 'none';
+            document.getElementById('sigDrawView').style.display = 'flex';
+            requestAnimationFrame(initSigDrawCanvas);
+        }
+
+        function initSigDrawCanvas() {
+            if (sigFabric) { sigFabric.dispose(); sigFabric = null; }
+            const container = document.getElementById('sigDrawCanvas').parentElement;
+            const w = container.offsetWidth - 2 || 380;
+            sigFabric = new fabric.Canvas('sigDrawCanvas', { isDrawingMode: true, backgroundColor: '#ffffff' });
+            sigFabric.freeDrawingBrush.color = '#1e1b4b';
+            sigFabric.freeDrawingBrush.width = 2.5;
+            sigFabric.setWidth(w);
+            sigFabric.setHeight(160);
+        }
+
+        function clearSigDrawCanvas() {
+            if (sigFabric) { sigFabric.clear(); sigFabric.backgroundColor = '#ffffff'; sigFabric.renderAll(); }
+        }
+
+        function getSigDataUrl() {
+            if (!sigFabric || sigFabric.getObjects().length === 0) return null;
+            return sigFabric.toDataURL({ format: 'png', multiplier: 2 });
+        }
+
+        async function saveSignature() {
+            const dataUrl = getSigDataUrl();
+            if (!dataUrl) { showToast('กรุณาวาดลายเซ็นก่อน', 'error'); return; }
+            showLoading(true);
+            document.getElementById('loadingText').innerText = 'กำลังบันทึกลายเซ็น...';
+            try {
+                // แปลง dataUrl → File แล้ว upload ไป Supabase
+                const res = await fetch(dataUrl);
+                const blob = await res.blob();
+                const file = new File([blob], `sig_${currentUser.id}.png`, { type: 'image/png' });
+                // upload ไปโฟลเดอร์ signatures/ ใน bucket เดิม
+                const safeName = `signatures/sig_${currentUser.id}_${Date.now()}.png`;
+                const upRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${safeName}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'image/png', 'x-upsert': 'true' },
+                    body: file
+                });
+                if (!upRes.ok) throw new Error(await upRes.text());
+                const sigUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${safeName}`;
+                // บันทึก URL ใน GAS (Users sheet)
+                await gasCall('saveSignatureUrl', { userId: currentUser.id, url: sigUrl });
+                // cache ใน localStorage
+                localStorage.setItem(SIG_URL_KEY + currentUser.id, sigUrl);
+                showLoading(false);
+                showToast('✅ บันทึกลายเซ็นแล้ว');
+                placeSignatureOnCanvas(sigUrl);
+            } catch(e) {
+                showLoading(false);
+                showToast('❌ บันทึกล้มเหลว: ' + (e.message || e), 'error');
+            }
+        }
+
+        function placeSignatureDirectly() {
+            const dataUrl = getSigDataUrl();
+            if (!dataUrl) { showToast('กรุณาวาดลายเซ็นก่อน', 'error'); return; }
+            placeSignatureOnCanvas(dataUrl);
+        }
+
+        function placeSignatureOnCanvas(src) {
+            src = src || cachedSigUrl || localStorage.getItem(SIG_URL_KEY + (currentUser && currentUser.id));
+            if (!src) { showToast('ไม่พบลายเซ็น', 'error'); return; }
+            const target = activeCanvases[0];
+            if (!target) { showToast('ไม่มี canvas', 'error'); return; }
+            const fc = target.canvas;
+            fabric.Image.fromURL(src, function(img) {
+                const maxW = fc.width * 0.25;
+                const scale = Math.min(maxW / img.width, 80 / img.height);
+                img.set({
+                    left: fc.width * 0.65, top: fc.height * 0.75,
+                    scaleX: scale, scaleY: scale,
+                    originX: 'left', originY: 'top',
+                    borderColor: '#7c3aed', cornerColor: '#7c3aed',
+                    cornerSize: 8, transparentCorners: false
+                });
+                fc.add(img); fc.setActiveObject(img); fc.renderAll();
+                canvasEdited = true;
+            }, { crossOrigin: 'anonymous' });
+            closeModal('modalSignature');
+        }
+
+        async function clearSavedSignature() {
+            if (!confirm('ลบลายเซ็นที่บันทึกไว้?')) return;
+            localStorage.removeItem(SIG_URL_KEY + currentUser.id);
+            cachedSigUrl = null;
+            await gasCall('saveSignatureUrl', { userId: currentUser.id, url: '' });
+            showSigDrawView();
+        }
+        // ──────────────────────────────────────────────────────────────
 
         // ── Checkbox teacher helpers ──────────────────────────────────
         function rebuildTeacherCheckboxes() {
@@ -1834,6 +2009,7 @@
 
         function setupEditorUI(state) {
             document.getElementById('editorAside').style.display = ''; // reset
+            document.getElementById('btnSignatureTool').style.display = 'none';
             document.getElementById('actionBtnClerk').style.display = 'none';
             document.getElementById('actionBtnDirector').style.display = 'none';
             document.getElementById('actionBtnDistribute').style.display = 'none';
