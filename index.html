@@ -921,12 +921,13 @@
             return new Blob([buf], { type });
         }
 
-        async function gasCall(action, params) {
+        async function gasCall(action, params, forcePost) {
             params = params || {};
             try {
                 const dataStr = JSON.stringify(params);
-                // ถ้า payload ใหญ่เกิน 500KB (มักเป็น PDF/ไฟล์ใหญ่) → POST
-                if (dataStr.length > 512000) {
+                // forcePost=true → บังคับ POST (เช่น processDocument ที่มีไฟล์แนบ)
+                // หรือ payload ใหญ่เกิน 4000 chars → POST (ป้องกัน URL ยาวเกิน browser limit)
+                if (forcePost || dataStr.length > 4000) {
                     const body = Object.assign({ action: action }, params);
                     const res = await fetch(GAS_URL, {
                         method: 'POST',
@@ -937,7 +938,7 @@
                     if (!res.ok) throw new Error('HTTP ' + res.status);
                     return await res.json();
                 }
-                // ใช้ GET สำหรับทุก operation (หลีกเลี่ยง CORS ของ POST)
+                // ใช้ GET สำหรับ read operations (payload เล็ก)
                 const url = new URL(GAS_URL);
                 url.searchParams.set('action', action);
                 if (dataStr !== '{}') url.searchParams.set('data', dataStr);
@@ -2631,7 +2632,7 @@
                     docType: (currentSubmitAction === 'director' || currentSubmitAction === 'distribute') ? docType : ''
                 };
 
-                gasCall('processDocument', { payload: payload }).then(function(response) {
+                gasCall('processDocument', { payload: payload }, true).then(function(response) {
                     showLoading(false);
                     if (response.success) {
                         showToast("✅ บันทึกและส่งเอกสารสำเร็จ!");
