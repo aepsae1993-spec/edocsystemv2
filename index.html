@@ -1494,8 +1494,30 @@
                 let timeTag = '';
                 if (currentUser.role === 'teacher' && doc.status && doc.status.includes('แจกจ่าย')) {
                     const ts = String(doc.timestamp || '').trim();
-                    const timeStr = ts.length >= 16 ? ts.slice(0, 16) : ts; // ตัดวินาทีออก
-                    if (timeStr) timeTag = `<div class="text-xs mt-1" style="color:var(--text-muted)">🕐 แจกจ่ายเมื่อ ${timeStr} น.</div>`;
+                    let datePart = '', timePart = '';
+                    // รูปแบบ GAS: DD/MM/YYYY HH:MM:SS
+                    const m = ts.match(/^(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{2}:\d{2})/);
+                    if (m) {
+                        datePart = m[1]; timePart = m[2];
+                    } else {
+                        // รูปแบบ JS Date string (เก่า) → แปลงใหม่
+                        const d = new Date(ts);
+                        if (!isNaN(d)) {
+                            const dd = String(d.getDate()).padStart(2,'0');
+                            const mm = String(d.getMonth()+1).padStart(2,'0');
+                            const yyyy = d.getFullYear();
+                            const hh = String(d.getHours()).padStart(2,'0');
+                            const mi = String(d.getMinutes()).padStart(2,'0');
+                            datePart = `${dd}/${mm}/${yyyy}`;
+                            timePart = `${hh}:${mi}`;
+                        }
+                    }
+                    if (datePart) {
+                        timeTag = `<div class="text-xs mt-1 flex items-center gap-3" style="color:var(--text-muted)">
+                            <span>📅 ${datePart}</span>
+                            ${timePart ? `<span>🕐 ${timePart} น.</span>` : ''}
+                        </div>`;
+                    }
                 }
 
                 tr.innerHTML = `
