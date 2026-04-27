@@ -331,6 +331,44 @@
         
         /* Search bar */
         .search-input:focus { box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); }
+
+        /* Teacher filter bar */
+        .t-filter-btn {
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid var(--border2);
+            background: var(--bg-card);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .t-filter-btn:hover { background: var(--bg-hover); color: var(--text-base); }
+        .t-filter-btn.tf-active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+        .t-sort-btn {
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid var(--border2);
+            background: var(--bg-card);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .t-sort-btn:hover { background: var(--bg-hover); color: var(--text-base); }
+        .t-sort-btn.tf-active {
+            background: var(--bg-input);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
         
         /* Stat card */
         .stat-card {
@@ -550,8 +588,22 @@
                             <option value="แจกจ่าย">แจกจ่ายแล้ว</option>
                         </select>
                     </div>
+
+                    <!-- Teacher Filter Bar (ครูเท่านั้น) -->
+                    <div id="teacherFilterBar" style="display:none" class="flex flex-wrap gap-2 items-center pt-1">
+                        <span class="text-xs font-semibold" style="color:var(--text-muted)">เรียงตาม:</span>
+                        <button id="tSortTime" class="t-sort-btn tf-active" onclick="setTeacherSort('time')">🕐 ล่าสุด</button>
+                        <button id="tSortNo"   class="t-sort-btn"           onclick="setTeacherSort('docNo')">🔢 เลขคำสั่ง</button>
+                        <span class="text-slate-300 mx-1 select-none">│</span>
+                        <span class="text-xs font-semibold" style="color:var(--text-muted)">แสดง:</span>
+                        <button id="tFAll"  class="t-filter-btn tf-active" onclick="setTeacherFilter('')">ทั้งหมด</button>
+                        <button id="tFUnread"  class="t-filter-btn" onclick="setTeacherFilter('unread')">📄 ยังไม่เปิด</button>
+                        <button id="tFRead"    class="t-filter-btn" onclick="setTeacherFilter('read')">👁️ เปิดแล้ว</button>
+                        <button id="tFAck"     class="t-filter-btn" onclick="setTeacherFilter('acknowledged')">📋 รับทราบ</button>
+                        <button id="tFDone"    class="t-filter-btn" onclick="setTeacherFilter('completed')">🎉 เสร็จสิ้น</button>
+                    </div>
                 </div>
-                
+
                 <!-- TAB BAR -->
                 <div id="dashboardTabs" class="flex gap-0.5 sm:gap-1 mb-3 sm:mb-4 border-b border-slate-200 pb-0 overflow-x-auto mobile-scroll-x -mx-3 px-3 sm:mx-0 sm:px-0">
                     <!-- จะถูกเติมผ่าน JS ตาม Role -->
@@ -963,7 +1015,9 @@
         let globalTeacherList = []; 
         let allDocs = []; 
         let overdueMap = {}; // เก็บ docId -> hours ค้าง
-        let currentTab = ''; 
+        let currentTab = '';
+        let teacherSortMode = 'time';    // 'time' | 'docNo'
+        let teacherStatusFilter = '';    // '' | 'unread' | 'read' | 'acknowledged' | 'completed'
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
         // --- 3. Initialization ---
@@ -1031,6 +1085,11 @@
             
             // Show filter for clerk/admin/director
             document.getElementById('filterStatus').style.display = (currentUser.role === 'clerk' || currentUser.role === 'admin' || currentUser.role === 'director') ? 'block' : 'none';
+            // Show teacher filter bar เฉพาะครู
+            document.getElementById('teacherFilterBar').style.display = currentUser.role === 'teacher' ? 'flex' : 'none';
+            // reset teacher filter ทุกครั้งที่ login
+            teacherSortMode = 'time';
+            teacherStatusFilter = '';
             
             switchView('viewDashboard');
             currentTab = ''; 
@@ -1354,6 +1413,30 @@
             renderTable();
         }
 
+        // ── Teacher sort/filter helpers ──────────────────────────────
+        function setTeacherSort(mode) {
+            teacherSortMode = mode;
+            document.getElementById('tSortTime').classList.toggle('tf-active', mode === 'time');
+            document.getElementById('tSortNo').classList.toggle('tf-active',   mode === 'docNo');
+            renderTable();
+        }
+        function setTeacherFilter(status) {
+            teacherStatusFilter = status;
+            const map = { '': 'tFAll', 'unread': 'tFUnread', 'read': 'tFRead', 'acknowledged': 'tFAck', 'completed': 'tFDone' };
+            Object.values(map).forEach(id => document.getElementById(id).classList.remove('tf-active'));
+            if (map[status]) document.getElementById(map[status]).classList.add('tf-active');
+            renderTable();
+        }
+        function parseDocTimestamp(ts) {
+            const m = String(ts||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{2}):(\d{2})/);
+            if (m) {
+                let y = parseInt(m[3]); if (y > 2500) y -= 543;
+                return new Date(y, parseInt(m[2])-1, parseInt(m[1]), parseInt(m[4]), parseInt(m[5])).getTime();
+            }
+            const d = new Date(ts||0); return isNaN(d) ? 0 : d.getTime();
+        }
+        // ─────────────────────────────────────────────────────────────
+
         function renderTable() {
             // If summary tab is active, render summary instead
             if (currentTab === 'summary') {
@@ -1385,12 +1468,36 @@
                 if (currentTab === 'admin-all') visibleDocs = [...allDocs];
                 else if (currentTab === 'admin-manage') visibleDocs = [...allDocs];
             } else if (currentUser.role === 'teacher') {
+                // กรองเฉพาะเอกสารที่แจกจ่ายถึงครูคนนี้
                 visibleDocs = allDocs.filter(d => {
                     if (!d.status.includes('แจกจ่าย')) return false;
                     if (!d.target) return false;
                     const targetsArray = d.target.split(',').map(s => s.trim());
                     return targetsArray.includes('all') || targetsArray.includes(currentUser.id.trim());
                 });
+                // กรองตามสถานะ (teacher filter bar)
+                if (teacherStatusFilter) {
+                    visibleDocs = visibleDocs.filter(d => {
+                        let tr = {};
+                        try { tr = JSON.parse(d.trackingData || '{}'); } catch(e) {}
+                        const s = tr[currentUser.id] || '';
+                        if (teacherStatusFilter === 'unread')       return !s;
+                        if (teacherStatusFilter === 'read')         return s === 'read';
+                        if (teacherStatusFilter === 'acknowledged') return s === 'acknowledged';
+                        if (teacherStatusFilter === 'completed')    return s === 'completed';
+                        return true;
+                    });
+                }
+                // เรียงลำดับ
+                if (teacherSortMode === 'time') {
+                    visibleDocs.sort((a, b) => parseDocTimestamp(b.timestamp) - parseDocTimestamp(a.timestamp));
+                } else {
+                    // เรียงตามตัวเลขนำหน้าเลขคำสั่ง (019/2569 → 19)
+                    visibleDocs.sort((a, b) => {
+                        const n = s => parseInt((s||'').split('/')[0]) || 0;
+                        return n(b.docNo) - n(a.docNo);
+                    });
+                }
             }
             
             // Apply search filter
