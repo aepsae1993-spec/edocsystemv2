@@ -681,11 +681,18 @@
                     <div class="flex items-center justify-between">
                         <h2 class="text-lg sm:text-2xl font-bold text-slate-800">📋 กล่องเอกสาร</h2>
                         <!-- New Doc Button -->
-                        <label id="btnNewDoc" for="docUpload" class="hidden bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-bold shadow-sm shadow-indigo-500/20 cursor-pointer transition-all flex items-center gap-2 text-sm sm:text-base whitespace-nowrap">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                            <span class="hidden sm:inline">ลงรับเอกสารใหม่</span>
-                            <span class="sm:hidden">+ ลงรับ</span>
-                        </label>
+                        <div class="flex items-center gap-2">
+                            <label id="btnNewDoc" for="docUpload" class="hidden bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-bold shadow-sm shadow-indigo-500/20 cursor-pointer transition-all items-center gap-2 text-sm sm:text-base whitespace-nowrap">
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                <span class="hidden sm:inline">ลงรับเอกสารใหม่</span>
+                                <span class="sm:hidden">+ ลงรับ</span>
+                            </label>
+                            <button id="btnQuickUpload" onclick="openQuickUploadModal()" class="hidden bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-bold shadow-sm shadow-emerald-500/20 transition-all items-center gap-2 text-sm sm:text-base whitespace-nowrap">
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                <span class="hidden sm:inline">⚡ อัปโหลดด่วน</span>
+                                <span class="sm:hidden">⚡</span>
+                            </button>
+                        </div>
                         <input type="file" id="docUpload" accept="image/*,application/pdf" class="hidden-input">
                     </div>
                     <div class="flex items-center gap-2 w-full">
@@ -1054,6 +1061,76 @@
         </div>
     </div>
 
+    <!-- Modal: Quick Upload (⚡ อัปโหลดด่วน) -->
+    <div id="modalQuickUpload" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[3000] hidden items-center justify-center">
+        <div class="rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden mx-4 animate-fadeInUp max-h-[92vh] flex flex-col" style="background:var(--bg-card);color:var(--text-base);border:1px solid var(--border)">
+            <!-- Header -->
+            <div class="p-5 border-b flex justify-between items-start shrink-0" style="border-color:var(--border)">
+                <div>
+                    <h3 class="text-xl font-bold flex items-center gap-2" style="color:var(--text-head)">⚡ อัปโหลดด่วน</h3>
+                    <p class="text-xs mt-0.5" style="color:var(--text-muted)">แจกจ่ายเอกสารโดยตรง ไม่ต้องผ่านขั้นตอนลงนาม ผอ.</p>
+                </div>
+                <button onclick="closeModal('modalQuickUpload')" class="w-8 h-8 rounded-lg flex items-center justify-center text-2xl transition hover:opacity-70 shrink-0 mt-1" style="color:var(--text-muted)">&times;</button>
+            </div>
+            <!-- Body -->
+            <div class="p-5 flex flex-col gap-4 overflow-y-auto flex-1">
+                <!-- ไฟล์เอกสาร -->
+                <div class="flex flex-col gap-1.5">
+                    <label class="font-semibold text-sm" style="color:var(--text-base)">📄 ไฟล์เอกสาร <span class="text-red-500">*</span></label>
+                    <label for="quickDocFile" class="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-5 cursor-pointer transition hover:border-indigo-400" style="border-color:var(--border);background:var(--bg-input)" id="quickFileDropZone">
+                        <svg class="w-8 h-8" style="color:var(--text-muted)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        <span class="text-sm font-medium" style="color:var(--text-muted)">คลิกหรือลากไฟล์มาวาง (PDF / รูปภาพ)</span>
+                        <span id="quickFileName" class="text-sm font-bold text-indigo-500 hidden text-center break-all px-2"></span>
+                        <input type="file" id="quickDocFile" accept="image/*,application/pdf" class="hidden" onchange="handleQuickFileSelect(this)">
+                    </label>
+                </div>
+                <!-- ชื่อเอกสาร -->
+                <div class="flex flex-col gap-1.5">
+                    <label class="font-semibold text-sm" style="color:var(--text-base)">📝 เรื่อง / ชื่อเอกสาร <span class="text-red-500">*</span></label>
+                    <input type="text" id="quickDocTitle" class="border rounded-xl p-3 text-sm outline-none transition" style="background:var(--bg-input);border-color:var(--border);color:var(--text-base)" placeholder="ระบุชื่อเรื่องของเอกสาร...">
+                </div>
+                <!-- ประเภทเอกสาร -->
+                <div class="flex flex-col gap-1.5">
+                    <label class="font-semibold text-sm" style="color:var(--text-base)">📂 ประเภทเอกสาร <span class="text-red-500">*</span></label>
+                    <select id="quickDocType" class="border rounded-xl p-3 text-sm outline-none transition" style="background:var(--bg-input);border-color:var(--border);color:var(--text-base)">
+                        <option value="ประชาสัมพันธ์">📢 ประชาสัมพันธ์</option>
+                        <option value="แจ้งให้ทราบ">📋 แจ้งให้ทราบ</option>
+                        <option value="พิจารณา">🔍 พิจารณา</option>
+                        <option value="ดำเนินการ">⚙️ ดำเนินการ</option>
+                    </select>
+                </div>
+                <!-- แจกจ่ายให้ใคร -->
+                <div class="flex flex-col gap-1.5">
+                    <label class="font-semibold text-sm" style="color:var(--text-base)">👥 แจกจ่ายให้ <span class="text-red-500">*</span></label>
+                    <div id="quickTeacherCheckboxList" class="border rounded-xl overflow-hidden divide-y max-h-44 overflow-y-auto" style="background:var(--bg-input);border-color:var(--border)">
+                        <label class="flex items-center gap-3 px-4 py-2.5 cursor-pointer transition hover:opacity-80" style="border-color:var(--border2)">
+                            <input type="checkbox" id="qchk_all" value="all" class="w-5 h-5 accent-indigo-600 rounded shrink-0" onchange="handleQuickAllCheckbox(this)">
+                            <span class="font-semibold text-sm" style="color:var(--text-base)">📢 ทุกบุคลากร</span>
+                        </label>
+                    </div>
+                </div>
+                <!-- หมายเหตุ -->
+                <div class="flex flex-col gap-1.5">
+                    <label class="font-semibold text-sm" style="color:var(--text-base)">หมายเหตุ / ข้อความสั่งการ</label>
+                    <textarea id="quickNote" class="border rounded-xl p-3 text-sm outline-none h-16 resize-none transition" style="background:var(--bg-input);border-color:var(--border);color:var(--text-base)" placeholder="พิมพ์ข้อความเพิ่มเติม..."></textarea>
+                </div>
+                <!-- ด่วนมาก -->
+                <div class="flex items-center gap-3 p-3.5 rounded-xl" style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.25)">
+                    <input type="checkbox" id="quickUrgent" class="w-5 h-5 accent-red-600 rounded shrink-0">
+                    <label for="quickUrgent" class="font-bold text-red-600 text-sm cursor-pointer">🔴 เอกสารด่วนมาก <span class="font-normal text-red-400 text-xs">(แจ้งเตือนซ้ำทุก 2 ชม.)</span></label>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div class="p-4 border-t flex justify-end gap-3 shrink-0" style="border-color:var(--border);background:var(--bg-card2)">
+                <button onclick="closeModal('modalQuickUpload')" class="px-5 py-2.5 font-semibold rounded-xl transition text-sm" style="color:var(--text-muted)">ยกเลิก</button>
+                <button onclick="submitQuickUpload()" class="px-5 py-2.5 font-bold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 rounded-xl shadow-sm transition flex items-center gap-2 text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    📤 แจกจ่ายด่วน
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- 1. GAS API URL ---
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbyb2Qv64QbuMPP4lwN3gHsJSsWThRp7KMTCyAYDN9YCCrVGzTiI1smS1K_4ULErfX7Yog/exec';
@@ -1196,6 +1273,7 @@
             document.getElementById('userRoleBadge').innerText = currentUser.name;
             document.getElementById('userRoleBadge').className = `px-3 py-1.5 rounded-full text-xs font-bold ${currentUser.badge}`;
             document.getElementById('btnNewDoc').style.display = (currentUser.role === 'clerk') ? 'flex' : 'none';
+            document.getElementById('btnQuickUpload').style.display = (currentUser.role === 'clerk') ? 'flex' : 'none';
             
             // Show filter for clerk/admin/director
             document.getElementById('filterStatus').style.display = (currentUser.role === 'clerk' || currentUser.role === 'admin' || currentUser.role === 'director') ? 'block' : 'none';
@@ -3308,6 +3386,157 @@
             // Re-render management table
             if (currentTab === 'teacher-manage') {
                 renderTeacherManagement();
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // ⚡ Quick Upload — อัปโหลดด่วน (ไม่ผ่าน editor)
+        // ══════════════════════════════════════════════════════════════
+        let quickUploadFile = null;
+
+        function openQuickUploadModal() {
+            quickUploadFile = null;
+            document.getElementById('quickDocFile').value = '';
+            const nameEl = document.getElementById('quickFileName');
+            nameEl.classList.add('hidden');
+            nameEl.textContent = '';
+            document.getElementById('quickDocTitle').value = '';
+            document.getElementById('quickDocType').value = 'ประชาสัมพันธ์';
+            document.getElementById('quickNote').value = '';
+            document.getElementById('quickUrgent').checked = false;
+            rebuildQuickTeacherCheckboxes();
+            document.getElementById('modalQuickUpload').style.display = 'flex';
+        }
+
+        function handleQuickFileSelect(input) {
+            const file = input.files[0];
+            if (!file) return;
+            quickUploadFile = file;
+            const nameEl = document.getElementById('quickFileName');
+            nameEl.textContent = '📎 ' + file.name;
+            nameEl.classList.remove('hidden');
+            // Auto-fill title from filename (ถ้ายังว่าอยู่)
+            const titleEl = document.getElementById('quickDocTitle');
+            if (!titleEl.value.trim()) {
+                // ตัด extension ออก
+                titleEl.value = file.name.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ');
+            }
+        }
+
+        function rebuildQuickTeacherCheckboxes() {
+            const list = document.getElementById('quickTeacherCheckboxList');
+            if (!list) return;
+            const allRow = list.querySelector('label:first-child');
+            list.innerHTML = '';
+            if (allRow) list.appendChild(allRow);
+            const allCb = document.getElementById('qchk_all');
+            if (allCb) allCb.checked = false;
+            globalTeacherList.forEach(function(t) {
+                const lbl = document.createElement('label');
+                lbl.className = 'flex items-center gap-3 px-4 py-2.5 cursor-pointer transition hover:opacity-80';
+                lbl.innerHTML = `<input type="checkbox" id="qchk_${t.id}" value="${t.id}" class="w-5 h-5 accent-indigo-600 rounded shrink-0" onchange="handleQuickTeacherCheckbox(this)"><span class="text-sm" style="color:var(--text-base)">${t.name} <span style="color:var(--text-muted);font-size:0.78em">(${t.department})</span></span>`;
+                list.appendChild(lbl);
+            });
+        }
+
+        function handleQuickAllCheckbox(el) {
+            const list = document.getElementById('quickTeacherCheckboxList');
+            list.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
+                cb.checked = el.checked;
+            });
+        }
+
+        function handleQuickTeacherCheckbox(el) {
+            if (!el.checked) {
+                const allCb = document.getElementById('qchk_all');
+                if (allCb) allCb.checked = false;
+            } else {
+                const list = document.getElementById('quickTeacherCheckboxList');
+                const teacherCbs = Array.from(list.querySelectorAll('input[type=checkbox]:not(#qchk_all)'));
+                if (teacherCbs.length > 0 && teacherCbs.every(function(cb) { return cb.checked; })) {
+                    const allCb = document.getElementById('qchk_all');
+                    if (allCb) allCb.checked = true;
+                }
+            }
+        }
+
+        function getQuickCheckedTeachers() {
+            const allCb = document.getElementById('qchk_all');
+            if (allCb && allCb.checked) return ['all'];
+            const list = document.getElementById('quickTeacherCheckboxList');
+            if (!list) return [];
+            const vals = [];
+            list.querySelectorAll('input[type=checkbox]:not(#qchk_all):checked').forEach(function(cb) {
+                vals.push(cb.value);
+            });
+            return vals;
+        }
+
+        async function submitQuickUpload() {
+            const title  = document.getElementById('quickDocTitle').value.trim();
+            const docType= document.getElementById('quickDocType').value;
+            const note   = document.getElementById('quickNote').value.trim();
+            const urgent = document.getElementById('quickUrgent').checked ? 'ด่วนมาก' : '';
+            const targets = getQuickCheckedTeachers();
+
+            // Validate
+            if (!quickUploadFile) { showToast('⚠️ กรุณาเลือกไฟล์เอกสาร', 'error'); return; }
+            if (!title)           { showToast('⚠️ กรุณาระบุชื่อเรื่องเอกสาร', 'error'); return; }
+            if (targets.length === 0) { showToast('⚠️ กรุณาเลือกผู้รับอย่างน้อย 1 คน', 'error'); return; }
+
+            closeModal('modalQuickUpload');
+            showLoading(true);
+
+            try {
+                document.getElementById('loadingText').innerText = 'กำลังจองเลขรับหนังสือ...';
+                const newDocNo = await gasCall('getNewRunningNo');
+
+                // อัปโหลดไฟล์ → Supabase
+                document.getElementById('loadingText').innerText = 'กำลังอัปโหลดไฟล์...';
+                const ext = quickUploadFile.name.split('.').pop() || 'pdf';
+                const fileName = `EDOC_${String(newDocNo).replace('/', '_')}.${ext}`;
+                const uploadFile = new File([quickUploadFile], fileName, { type: quickUploadFile.type });
+                const supabaseFileUrl = await uploadToSupabase(uploadFile);
+
+                if (!supabaseFileUrl) {
+                    showLoading(false);
+                    showToast('❌ อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองใหม่', 'error');
+                    return;
+                }
+
+                document.getElementById('loadingText').innerText = 'กำลังบันทึกและส่งเอกสาร...';
+
+                const payload = {
+                    action: 'distribute',
+                    docId: null,
+                    docNo: newDocNo,
+                    title: title,
+                    sender: currentUser.name,
+                    note: note,
+                    fileData: null,          // ไม่ส่ง base64 — ใช้ Supabase URL แทน
+                    fileName: fileName,
+                    supabaseFileUrl: supabaseFileUrl,
+                    existingFileUrl: null,
+                    targetTeachers: targets,
+                    attachments: [],
+                    existingAttachmentUrl: null,
+                    trackingData: null,
+                    urgent: urgent,
+                    docType: docType
+                };
+
+                const response = await gasCall('processDocument', { payload: payload }, true);
+                showLoading(false);
+                if (response.success) {
+                    showToast('✅ แจกจ่ายเอกสารสำเร็จ! (เลขรับ: ' + newDocNo + ')');
+                    quickUploadFile = null;
+                    setTimeout(() => loadDashboardData(), 300);
+                } else {
+                    showToast('❌ ข้อผิดพลาด: ' + (response.message || 'ไม่ทราบสาเหตุ'), 'error');
+                }
+            } catch(err) {
+                showLoading(false);
+                showToast('❌ เกิดข้อผิดพลาด: ' + err, 'error');
             }
         }
     </script>
