@@ -1769,13 +1769,13 @@
 
                     if (currentUser.role === 'teacher') {
                         if (!tracking[currentUser.id] || tracking[currentUser.id] === 'read') {
-                            actionHtml += `<button onclick='quickAcknowledge("${doc.id}")' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 text-xs sm:text-sm font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap">📋 <span class="hidden sm:inline">รับทราบ</span></button>`;
+                            actionHtml += `<button onclick='quickAcknowledge("${doc.id}")' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 text-xs sm:text-sm font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap">📋 รับทราบ</button>`;
                         }
                         if (tracking[currentUser.id] === 'acknowledged') {
-                            actionHtml += `<button onclick='quickComplete("${doc.id}")' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 text-xs sm:text-sm font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap">✅ <span class="hidden sm:inline">เสร็จสิ้น</span></button>`;
+                            actionHtml += `<button onclick='quickComplete("${doc.id}")' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 text-xs sm:text-sm font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap">✅ เสร็จสิ้น</button>`;
                         }
                         if (doc.fileUrl) {
-                            actionHtml += `<button onclick='openAndTrackRead("${doc.id}", "${doc.fileUrl}")' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 text-xs sm:text-sm font-semibold text-blue-700 transition flex items-center gap-1 whitespace-nowrap">📂 <span class="hidden sm:inline">เปิดเอกสาร</span></button>`;
+                            actionHtml += `<button onclick='openAndTrackRead("${doc.id}", "${doc.fileUrl}")' class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 text-xs sm:text-sm font-semibold text-blue-700 transition flex items-center gap-1 whitespace-nowrap">📂 เปิดเอกสาร</button>`;
                         }
                         rowAttUrls.forEach(function(url, i) {
                             actionHtml += `<a href="${url}" target="_blank" class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 text-xs sm:text-sm font-semibold text-emerald-700 transition flex items-center gap-1 whitespace-nowrap">📎 <span class="hidden sm:inline">${rowAttUrls.length > 1 ? 'แนบ'+(i+1) : 'แนบ'}</span></a>`;
